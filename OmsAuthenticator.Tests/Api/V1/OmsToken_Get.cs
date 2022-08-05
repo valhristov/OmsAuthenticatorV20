@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OmsAuthenticator.Tests.Api.V1
@@ -5,6 +6,15 @@ namespace OmsAuthenticator.Tests.Api.V1
     [TestClass]
     public class OmsToken_Get
     {
+        private readonly OmsAuthenticatorApp _app;
+        private readonly HttpClient _client;
+
+        public OmsToken_Get()
+        {
+            _app = new OmsAuthenticatorApp(() => default!);
+            _client = _app.CreateClient();
+        }
+
         [DataTestMethod]
         [DataRow("/oms/token")]
         [DataRow("/oms/token?test=best")]
@@ -13,16 +23,13 @@ namespace OmsAuthenticator.Tests.Api.V1
         public async Task GetToken_Invalid_Get(string url)
         {
             // Arrange
-            var app = new OmsAuthenticatorApp();
-
-            using var client = app.CreateClient();
 
             // Act
-            using var response = await client.GetAsync(url);
-            var responseContent = await response.Content.ReadAsStringAsync();
+            using var response = await _client.GetAsync(url);
 
             // Assert
-            ResponseShould.BeBadRequest(response, responseContent);
+            await ResponseShould.BeBadRequest(response);
         }
+
     }
 }

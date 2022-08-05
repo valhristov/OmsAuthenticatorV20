@@ -13,37 +13,37 @@ namespace OmsAuthenticator.Framework
 
         public static Result<T> Success<T>(T value) =>
             new Result<T>.Success(value);
-
-        public static Result<IEnumerable<T>> SelectMany<T>(this IEnumerable<Result<T>> collection)
-        {
-            var groups = collection.ToLookup(x => x.IsFailure);
-            return groups[true].Any() // IsFailure==true
-                ? Failure<IEnumerable<T>>(groups[true].OfType<Result<T>.Failure>().SelectMany(f => f.Errors).ToImmutableArray())
-                : Success<IEnumerable<T>>(groups[false].OfType<Result<T>.Success>().Select(s => s.Value).ToList());
-        }
     }
 
     public class Result<T>
     {
+        public bool IsFailure => this is Failure;
+
         [DebuggerStepThrough]
         public TOut Select<TOut>(Func<T, TOut> onSuccess, Func<ImmutableArray<string>, TOut> onFailure) =>
             this switch
             {
                 Success success => onSuccess(success.Value),
                 Failure failure => onFailure(failure.Errors),
-                _ => throw new NotSupportedException(),
+                _ => throw new NotImplementedException(),
             };
 
-        public bool IsFailure =>
-            this is Failure;
-
         [DebuggerStepThrough]
-        public Task<TOut> SelectAsync<TOut>(Func<T, Task<TOut>> onSuccess, Func<ImmutableArray<string>, TOut> onFailure) =>
+        public Result<TOut> Convert<TOut>(Func<T, Result<TOut>> convert) =>
             this switch
             {
-                Success success => onSuccess(success.Value),
-                Failure failure => Task.FromResult(onFailure(failure.Errors)),
-                _ => throw new NotSupportedException(),
+                Success success => convert(success.Value),
+                Failure failure => Result.Failure<TOut>(failure.Errors),
+                _ => throw new NotImplementedException(),
+            };
+
+        [DebuggerStepThrough]
+        public async Task<Result<TOut>> ConvertAsync<TOut>(Func<T, Task<Result<TOut>>> convertAsync) =>
+            this switch
+            {
+                Success success => await convertAsync(success.Value),
+                Failure failure => Result.Failure<TOut>(failure.Errors),
+                _ => throw new NotImplementedException(),
             };
 
         public sealed class Success : Result<T>

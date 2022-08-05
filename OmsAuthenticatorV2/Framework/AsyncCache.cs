@@ -14,19 +14,24 @@ namespace OmsAuthenticator.Framework
         }
 
         [DebuggerStepThrough]
-        public TValue AddOrUpdate(TKey key, Func<TValue> factory) =>
-            _cache
+        public TValue GetOrReplace(TKey key, Func<TValue> factory)
+        {
+            return _cache
                 .AddOrUpdate(key,
-                    k => new CacheEntry(factory, _expiration),
-                    (k, old) => ShouldReplaceCacheEntry(old) ? new CacheEntry(factory, _expiration) : old)
+                    k => CreateEntry(factory),
+                    (k, existingEntry) => ShouldReplaceEntry(existingEntry) ? CreateEntry(factory) : existingEntry)
                 .Value;
 
-        protected virtual bool ShouldReplaceCacheEntry(CacheEntry entry) =>
-            entry.Expired;
+            CacheEntry CreateEntry(Func<TValue> factory) =>
+                new CacheEntry(factory, DateTimeOffset.UtcNow.Add(_expiration));
+        }
+
+        protected virtual bool ShouldReplaceEntry(CacheEntry entry) =>
+            entry.Expires <= DateTimeOffset.UtcNow;
 
         public void Cleanup()
         {
-            var expired = _cache.Where(x => x.Value.Expired).ToList();
+            var expired = _cache.Where(x => ShouldReplaceEntry(x.Value)).ToList();
 
             foreach (var item in expired)
             {
@@ -38,14 +43,12 @@ namespace OmsAuthenticator.Framework
 
         protected class CacheEntry : Lazy<TValue>
         {
-            private readonly DateTimeOffset _expires;
+            public DateTimeOffset Expires { get; }
 
-            public bool Expired => _expires <= DateTimeOffset.UtcNow;
-
-            public CacheEntry(Func<TValue> factory, TimeSpan lifetime) : base(factory)
+            public CacheEntry(Func<TValue> factory, DateTimeOffset expires) : base(factory)
             {
                 Debug.WriteLine("New cache entry created");
-                _expires = DateTimeOffset.UtcNow.Add(lifetime);
+                Expires = expires;
             }
         }
     }
@@ -56,7 +59,8 @@ namespace OmsAuthenticator.Framework
         public AsyncResultCache(TimeSpan expiration) : base(expiration)
         { }
 
-        protected override bool ShouldReplaceCacheEntry(CacheEntry entry) =>
-            entry.Expired || (entry.IsValueCreated && entry.Value.IsCompleted && entry.Value.Result.IsFailure);
+        protected override bool ShouldReplaceEntry(CacheEntry entry) =>
+            base.ShouldReplaceEntry(entry) ||
+            (entry.IsValueCreated && entry.Value.IsCompleted && entry.Value.Result.IsFailure);
     }
 }
