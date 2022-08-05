@@ -10,9 +10,7 @@ namespace OmsAuthenticator.Tests
     public class OmsAuthenticatorApp : WebApplicationFactory<Program>
     {
         private readonly Mock<IHttpClientFactory> _httpClientFactoryMock;
-        private readonly Mock<ISystemTime> _systemTimeMock;
-
-        private DateTimeOffset _currentTime = DateTimeOffset.UtcNow;
+        private SystemTimeMock _systemTimeMock;
 
         public OmsAuthenticatorApp(Func<HttpClient> getHttpClient)
         {
@@ -26,8 +24,7 @@ namespace OmsAuthenticator.Tests
                     return client;
                 });
 
-            _systemTimeMock = new Mock<ISystemTime>();
-            _systemTimeMock.SetupGet(x => x.UtcNow).Returns(() => _currentTime);
+            _systemTimeMock = new SystemTimeMock();
         }
 
         protected override IHost CreateHost(IHostBuilder builder)
@@ -35,13 +32,13 @@ namespace OmsAuthenticator.Tests
             builder.ConfigureServices(services =>
             {
                 services.AddSingleton(_httpClientFactoryMock.Object);
-                services.AddSingleton(_systemTimeMock.Object);
+                services.AddSingleton<ISystemTime>(_systemTimeMock);
             });
 
             return base.CreateHost(builder);
         }
 
         public void Wait(TimeSpan time) =>
-            _currentTime += time;
+            _systemTimeMock.Wait(time);
     }
 }

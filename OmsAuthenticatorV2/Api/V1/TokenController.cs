@@ -46,7 +46,7 @@ namespace OmsAuthenticator.Api.V1
 
             var tokenKey = new TokenKey(request.OmsId, request.OmsConnection, request.RequestId ?? Guid.NewGuid().ToString());
 
-            var tokenResult = await _cache.GetOrReplace(tokenKey, async () => await _tokenAdapter.GetOmsTokenAsync(tokenKey));
+            var tokenResult = await _cache.AddOrUpdate(tokenKey, async () => await _tokenAdapter.GetOmsTokenAsync(tokenKey));
 
             return tokenResult.Select(
                 token => Results.Ok(new TokenResponse(token.Value, tokenKey.RequestId, token.Expires)),
