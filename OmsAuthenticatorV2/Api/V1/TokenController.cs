@@ -35,16 +35,16 @@ namespace OmsAuthenticator.Api.V1
             {
                 return Results.BadRequest(new TokenResponse(new[] { $"Invalid request." }));
             }
-            if (request.RegistrationKey == null)
+            if (request.OmsConnection == null)
             {
-                return Results.BadRequest(new TokenResponse(new[] { $"registrationKey body parameter is required." }));
+                return Results.BadRequest(new TokenResponse(new[] { $"omsConnection body parameter is required." }));
             }
             if (request.OmsId == null)
             {
                 return Results.BadRequest(new TokenResponse(new[] { $"omsId body parameter is required." }));
             }
 
-            var tokenKey = new TokenKey(request.OmsId, request.OmsConnection ?? request.RegistrationKey, request.RequestId ?? Guid.NewGuid().ToString());
+            var tokenKey = new TokenKey(request.OmsId, request.OmsConnection, request.RequestId ?? Guid.NewGuid().ToString());
 
             var tokenResult = await _cache.GetOrReplace(tokenKey, async () => await _tokenAdapter.GetOmsTokenAsync(tokenKey));
 

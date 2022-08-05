@@ -4,8 +4,6 @@ namespace OmsAuthenticator.Api.V1
 {
     public class TokenRequest
     {
-        [JsonPropertyName("registrationKey")]
-        public string? RegistrationKey { get; set; }
         [JsonPropertyName("omsId")]
         public string? OmsId { get; set; }
         [JsonPropertyName("omsConnection")]

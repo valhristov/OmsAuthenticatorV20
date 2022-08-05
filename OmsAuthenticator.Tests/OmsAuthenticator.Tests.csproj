@@ -20,7 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Oms.Client\Oms.Client.csproj" />
     <ProjectReference Include="..\OmsAuthenticatorV2\OmsAuthenticatorV2.csproj" />
   </ItemGroup>
 

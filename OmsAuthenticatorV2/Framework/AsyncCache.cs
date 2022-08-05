@@ -3,35 +3,38 @@ using System.Diagnostics;
 
 namespace OmsAuthenticator.Framework
 {
-    public class Cache<TKey, TValue> where TKey : notnull
+    public class Cache<TKey, TValue>
+        where TKey : notnull
     {
-        private readonly ConcurrentDictionary<TKey, CacheEntry> _cache = new();
-        private readonly TimeSpan _expiration;
+        protected readonly ConcurrentDictionary<TKey, CacheEntry> _cache = new();
+        private readonly TimeSpan _lifetime;
+        private readonly Func<DateTimeOffset> _getSystemTime;
 
-        public Cache(TimeSpan expiration)
+        public Cache(TimeSpan lifetime, Func<DateTimeOffset> getSystemTime)
         {
-            _expiration = expiration;
+            _lifetime = lifetime;
+            _getSystemTime = getSystemTime;
         }
 
         [DebuggerStepThrough]
-        public TValue GetOrReplace(TKey key, Func<TValue> factory)
+        public TValue AddOrUpdate(TKey key, Func<TValue> factory)
         {
             return _cache
                 .AddOrUpdate(key,
                     k => CreateEntry(factory),
-                    (k, existingEntry) => ShouldReplaceEntry(existingEntry) ? CreateEntry(factory) : existingEntry)
+                    (k, old) => ShouldReplaceCacheEntry(old) ? CreateEntry(factory) : old)
                 .Value;
 
             CacheEntry CreateEntry(Func<TValue> factory) =>
-                new CacheEntry(factory, DateTimeOffset.UtcNow.Add(_expiration));
+                new CacheEntry(factory, _getSystemTime().Add(_lifetime));
         }
 
-        protected virtual bool ShouldReplaceEntry(CacheEntry entry) =>
-            entry.Expires <= DateTimeOffset.UtcNow;
+        protected virtual bool ShouldReplaceCacheEntry(CacheEntry entry) =>
+            entry.ExpirationDate <= _getSystemTime();
 
         public void Cleanup()
         {
-            var expired = _cache.Where(x => ShouldReplaceEntry(x.Value)).ToList();
+            var expired = _cache.Where(x => ShouldReplaceCacheEntry(x.Value)).ToList();
 
             foreach (var item in expired)
             {
@@ -43,12 +46,12 @@ namespace OmsAuthenticator.Framework
 
         protected class CacheEntry : Lazy<TValue>
         {
-            public DateTimeOffset Expires { get; }
+            public DateTimeOffset ExpirationDate { get; }
 
-            public CacheEntry(Func<TValue> factory, DateTimeOffset expires) : base(factory)
+            public CacheEntry(Func<TValue> factory, DateTimeOffset expirationDate) : base(factory)
             {
                 Debug.WriteLine("New cache entry created");
-                Expires = expires;
+                ExpirationDate = expirationDate;
             }
         }
     }
@@ -56,11 +59,24 @@ namespace OmsAuthenticator.Framework
     public class AsyncResultCache<TKey, TValue> : Cache<TKey, Task<Result<TValue>>>
         where TKey : notnull
     {
-        public AsyncResultCache(TimeSpan expiration) : base(expiration)
+        public AsyncResultCache(TimeSpan lifetime, Func<DateTimeOffset> getSystemTime) : base(lifetime, getSystemTime)
         { }
 
-        protected override bool ShouldReplaceEntry(CacheEntry entry) =>
-            base.ShouldReplaceEntry(entry) ||
+        protected override bool ShouldReplaceCacheEntry(CacheEntry entry) =>
+            base.ShouldReplaceCacheEntry(entry) ||
             (entry.IsValueCreated && entry.Value.IsCompleted && entry.Value.Result.IsFailure);
+
+        public Task<Result<TValue>> FindLongestExpirationItem(Func<TKey, bool> predicate)
+        {
+            var task = _cache
+                .Where(kv => predicate(kv.Key)) // only entries that match the predicate
+                .Select(kv => kv.Value)
+                .Where(entry => !ShouldReplaceCacheEntry(entry))
+                .OrderByDescending(entry => entry.ExpirationDate)
+                .Select(entry => entry.Value)
+                .FirstOrDefault();
+
+            return task ?? Task.FromResult(Result.Success<TValue>(default!));
+        }
     }
 }

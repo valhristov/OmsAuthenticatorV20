@@ -10,10 +10,12 @@ namespace OmsAuthenticator.ApiAdapters.GISMT.V3
         public static readonly string HttpClientName = "gismt";
 
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly Func<string, Token> _tokenFactory;
 
-        public OmsTokenAdapter(IHttpClientFactory httpClientFactory, Func<string, Token> create)
+        public OmsTokenAdapter(IHttpClientFactory httpClientFactory, Func<string, Token> tokenFactory)
         {
             _httpClientFactory = httpClientFactory;
+            _tokenFactory = tokenFactory;
         }
 
         private record AuthData(string Uuid, string Data);
@@ -62,7 +64,7 @@ namespace OmsAuthenticator.ApiAdapters.GISMT.V3
 
             Result<Token> ToToken(AuthTokenResponse response) =>
                 response.Token != null && response.ErrorCode == null
-                    ? Result.Success(new Token(response.Token, DateTimeOffset.UtcNow.AddHours(10))) // TODO: 
+                    ? Result.Success(_tokenFactory(response.Token))
                     : Result.Failure<Token>($"GIS-MT returned status OK, but no token. " +
                                             $"Error Code: '{response.ErrorCode}', " +
                                             $"Error Message: '{response.ErrorMessage}', " +

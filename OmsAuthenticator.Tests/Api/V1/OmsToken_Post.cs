@@ -50,7 +50,7 @@ namespace OmsAuthenticator.Tests.Api.V1
         [DataRow("/oms/token", @"{ ""omsId"": ""best"", ""requestId"": ""test"" }")]
         [DataRow("/oms/token?omsId=xxx", "{}")]
         [DataRow("/oms/token?registrationKey=xxx", "{}")]
-        public async Task GetToken_Invalid_Post(string url, string body)
+        public async Task Invalid_Request(string url, string body)
         {
             // Arrange
 
@@ -62,54 +62,50 @@ namespace OmsAuthenticator.Tests.Api.V1
         }
 
         [TestMethod]
-        public async Task First_Request_With_OmsConnection()
+        public async Task No_Token_In_Cache()
         {
             var omsConnection = NewGuid();
 
             SetupGetCertKeyRequest("the data");
             SetupGetTokenRequest(omsConnection, "the data", "the token 1");
 
-            var result = await PostAsync(new TokenRequest { RegistrationKey = NewGuid(), OmsConnection = omsConnection, OmsId = NewGuid(), RequestId = NewGuid(), });
+            var result = await PostAsync(new TokenRequest { OmsConnection = omsConnection, OmsId = NewGuid(), RequestId = NewGuid(), });
 
             await ResponseShould.BeOkResult(result, "the token 1");
 
-            //_httpTestHelper.VerifyGetCertKeyRequest(Times.Once());
-            //_httpTestHelper.VerifyGetTokenRequest(omsConnection, Times.Once());
+            _httpClientMock.VerifyNoOutstandingExpectation();
         }
 
         [TestMethod]
-        public async Task Subsequent_Requests_With_OmsConnection_Same_Key()
+        public async Task Token_Is_Cached()
         {
             // The token key consists of omd id, registration key and request id
 
             var omsConnection = NewGuid();
-            var registrationKey = NewGuid();
             var omsId = NewGuid();
             var requestId = NewGuid();
 
             SetupGetCertKeyRequest("the data");
             SetupGetTokenRequest(omsConnection, "the data", "the token");
 
-            var result = await PostAsync(new TokenRequest { RegistrationKey = registrationKey, OmsConnection = omsConnection, OmsId = omsId, RequestId = requestId, });
+            var result = await PostAsync(new TokenRequest { OmsConnection = omsConnection, OmsId = omsId, RequestId = requestId, });
             await ResponseShould.BeOkResult(result, "the token");
 
-            result = await PostAsync(new TokenRequest { RegistrationKey = registrationKey, OmsConnection = omsConnection, OmsId = omsId, RequestId = requestId, });
+            result = await PostAsync(new TokenRequest { OmsConnection = omsConnection, OmsId = omsId, RequestId = requestId, });
             await ResponseShould.BeOkResult(result, "the token");
 
-            result = await PostAsync(new TokenRequest { RegistrationKey = registrationKey, OmsConnection = omsConnection, OmsId = omsId, RequestId = requestId, });
+            result = await PostAsync(new TokenRequest { OmsConnection = omsConnection, OmsId = omsId, RequestId = requestId, });
             await ResponseShould.BeOkResult(result, "the token");
 
-            //_httpTestHelper.VerifyGetCertKeyRequest(Times.Once());
-            //_httpTestHelper.VerifyGetTokenRequest(omsConnection, Times.Once()); // we obtained only 1 token
+            _httpClientMock.VerifyNoOutstandingExpectation();
         }
 
         [TestMethod]
-        public async Task Subsequent_Requests_With_OmsConnection_Different_RequestId()
+        public async Task New_Token_Forced()
         {
             // The token key consists of omd id, registration key and request id
 
             var omsConnection = NewGuid();
-            var registrationKey = NewGuid();
             var omsId = NewGuid();
 
             SetupGetCertKeyRequest("the data 1");
@@ -119,26 +115,24 @@ namespace OmsAuthenticator.Tests.Api.V1
             SetupGetCertKeyRequest("the data 3");
             SetupGetTokenRequest(omsConnection, "the data 3", "the token 3");
 
-            var result = await PostAsync(new TokenRequest { RegistrationKey = registrationKey, OmsConnection = omsConnection, OmsId = omsId, RequestId = NewGuid(), });
+            var result = await PostAsync(new TokenRequest { OmsConnection = omsConnection, OmsId = omsId, RequestId = NewGuid(), });
             await ResponseShould.BeOkResult(result, "the token 1");
 
-            result = await PostAsync(new TokenRequest { RegistrationKey = registrationKey, OmsConnection = omsConnection, OmsId = omsId, RequestId = NewGuid(), });
+            result = await PostAsync(new TokenRequest { OmsConnection = omsConnection, OmsId = omsId, RequestId = NewGuid(), });
             await ResponseShould.BeOkResult(result, "the token 2");
 
-            result = await PostAsync(new TokenRequest { RegistrationKey = registrationKey, OmsConnection = omsConnection, OmsId = omsId, RequestId = NewGuid(), });
+            result = await PostAsync(new TokenRequest { OmsConnection = omsConnection, OmsId = omsId, RequestId = NewGuid(), });
             await ResponseShould.BeOkResult(result, "the token 3");
 
-            //_httpTestHelper.VerifyGetCertKeyRequest(Times.Exactly(3));
-            //_httpTestHelper.VerifyGetTokenRequest(omsConnection, Times.Exactly(3)); // we obtained 3 tokens
+            _httpClientMock.VerifyNoOutstandingExpectation();
         }
 
         [TestMethod]
-        public async Task Subsequent_Requests_With_OmsConnection_Same_Key_After_Expiration()
+        public async Task Token_Expires_In_Cache()
         {
             // The token key consists of omd id, registration key and request id
 
             var omsConnection = NewGuid();
-            var registrationKey = NewGuid();
             var omsId = NewGuid();
             var requestId = NewGuid();
 
@@ -149,130 +143,20 @@ namespace OmsAuthenticator.Tests.Api.V1
             SetupGetCertKeyRequest("the data 3");
             SetupGetTokenRequest(omsConnection, "the data 3", "the token 3");
 
-            var result = await PostAsync(new TokenRequest { RegistrationKey = registrationKey, OmsConnection = omsConnection, OmsId = omsId, RequestId = requestId, });
+            var result = await PostAsync(new TokenRequest { OmsConnection = omsConnection, OmsId = omsId, RequestId = requestId, });
             await ResponseShould.BeOkResult(result, "the token 1");
 
-            await Task.Delay(600); // wait for the token to expire
+            _app.Wait(TimeSpan.FromHours(10)); // wait for the token to expire
 
-            result = await PostAsync(new TokenRequest { RegistrationKey = registrationKey, OmsConnection = omsConnection, OmsId = omsId, RequestId = requestId, });
+            result = await PostAsync(new TokenRequest { OmsConnection = omsConnection, OmsId = omsId, RequestId = requestId, });
             await ResponseShould.BeOkResult(result, "the token 2");
 
-            await Task.Delay(600); // wait for the token to expire
+            _app.Wait(TimeSpan.FromHours(10)); // wait for the token to expire
 
-            result = await PostAsync(new TokenRequest { RegistrationKey = registrationKey, OmsConnection = omsConnection, OmsId = omsId, RequestId = requestId, });
+            result = await PostAsync(new TokenRequest { OmsConnection = omsConnection, OmsId = omsId, RequestId = requestId, });
             await ResponseShould.BeOkResult(result, "the token 3");
 
-            await Task.Delay(600); // wait for the token to expire
-
-            //_httpTestHelper.VerifyGetCertKeyRequest(Times.Exactly(3));
-            //_httpTestHelper.VerifyGetTokenRequest(omsConnection, Times.Exactly(3)); // we obtained only 1 token
-        }
-
-        [TestMethod]
-        public async Task First_Request_Without_OmsConnection()
-        {
-            var omsConnection = NewGuid();
-
-            //_httpTestHelper.SetupIntegrationGetConnectionRequest(omsConnection);
-            //_httpTestHelper.SetupGetCertKeyRequest("the uuid", "the data");
-            //_httpTestHelper.SetupGetTokenRequests(omsConnection, "the token");
-
-            var result = await PostAsync(new TokenRequest { RegistrationKey = NewGuid(), OmsId = NewGuid(), RequestId = NewGuid(), });
-
-            await ResponseShould.BeOkResult(result, "the token");
-
-            //_httpTestHelper.VerifyIntegrationGetConnectionRequest(Times.Once());
-            //_httpTestHelper.VerifyGetCertKeyRequest(Times.Once());
-            //_httpTestHelper.VerifyGetTokenRequest(omsConnection, Times.Once());
-        }
-
-        [TestMethod]
-        public async Task Subsequent_Requests_Without_OmsConnection_Same_Key()
-        {
-            // The token key consists of omd id, registration key and request id
-
-            var omsConnection = NewGuid();
-            var registrationKey = NewGuid();
-            var omsId = NewGuid();
-            var requestId = NewGuid();
-
-            //_httpTestHelper.SetupIntegrationGetConnectionRequest(omsConnection);
-            //_httpTestHelper.SetupGetCertKeyRequest("the uuid", "the data");
-            //_httpTestHelper.SetupGetTokenRequests(omsConnection, "the token");
-
-            var result = await PostAsync(new TokenRequest { RegistrationKey = registrationKey, OmsId = omsId, RequestId = requestId, });
-            await ResponseShould.BeOkResult(result, "the token");
-
-            result = await PostAsync(new TokenRequest { RegistrationKey = registrationKey, OmsId = omsId, RequestId = requestId, });
-            await ResponseShould.BeOkResult(result, "the token");
-
-            result = await PostAsync(new TokenRequest { RegistrationKey = registrationKey, OmsId = omsId, RequestId = requestId, });
-            await ResponseShould.BeOkResult(result, "the token");
-
-            //_httpTestHelper.VerifyIntegrationGetConnectionRequest(Times.Once());
-            //_httpTestHelper.VerifyGetCertKeyRequest(Times.Once());
-            //_httpTestHelper.VerifyGetTokenRequest(omsConnection, Times.Once()); // we obtained only 1 token
-        }
-
-        [TestMethod]
-        public async Task Subsequent_Requests_Without_OmsConnection_Same_Key_After_Expiration()
-        {
-            // The token key consists of omd id, registration key and request id
-
-            var omsConnection = NewGuid();
-            var registrationKey = NewGuid();
-            var omsId = NewGuid();
-            var requestId = NewGuid();
-
-            //_httpTestHelper.SetupIntegrationGetConnectionRequest(omsConnection);
-            //_httpTestHelper.SetupGetCertKeyRequest("the uuid", "the data");
-            //_httpTestHelper.SetupGetTokenRequests(omsConnection, "the token 1", "the token 2", "the token 3");
-
-            var result = await PostAsync(new TokenRequest { RegistrationKey = registrationKey, OmsId = omsId, RequestId = requestId, });
-            await ResponseShould.BeOkResult(result, "the token 1");
-
-            await Task.Delay(600); // wait for the token to expire
-
-            result = await PostAsync(new TokenRequest { RegistrationKey = registrationKey, OmsId = omsId, RequestId = requestId, });
-            await ResponseShould.BeOkResult(result, "the token 2");
-
-            await Task.Delay(600); // wait for the token to expire
-
-            result = await PostAsync(new TokenRequest { RegistrationKey = registrationKey, OmsId = omsId, RequestId = requestId, });
-            await ResponseShould.BeOkResult(result, "the token 3");
-
-            await Task.Delay(600); // wait for the token to expire
-
-            //_httpTestHelper.VerifyIntegrationGetConnectionRequest(Times.Exactly(3));
-            //_httpTestHelper.VerifyGetCertKeyRequest(Times.Exactly(3));
-            //_httpTestHelper.VerifyGetTokenRequest(omsConnection, Times.Exactly(3)); // we obtained only 1 token
-        }
-
-        [TestMethod]
-        public async Task Subsequent_Requests_Without_OmsConnection_Different_RequestId()
-        {
-            // The token key consists of omd id, registration key and request id
-
-            var omsConnection = NewGuid();
-            var registrationKey = NewGuid();
-            var omsId = NewGuid();
-
-            //_httpTestHelper.SetupIntegrationGetConnectionRequest(omsConnection);
-            //_httpTestHelper.SetupGetCertKeyRequest("the uuid", "the data");
-            //_httpTestHelper.SetupGetTokenRequests(omsConnection, "the token 1", "the token 2", "the token 3");
-
-            var result = await PostAsync(new TokenRequest { RegistrationKey = registrationKey, OmsId = omsId, RequestId = NewGuid(), });
-            await ResponseShould.BeOkResult(result, "the token 1");
-
-            result = await PostAsync(new TokenRequest { RegistrationKey = registrationKey, OmsId = omsId, RequestId = NewGuid(), });
-            await ResponseShould.BeOkResult(result, "the token 2");
-
-            result = await PostAsync(new TokenRequest { RegistrationKey = registrationKey, OmsId = omsId, RequestId = NewGuid(), });
-            await ResponseShould.BeOkResult(result, "the token 3");
-
-            //_httpTestHelper.VerifyIntegrationGetConnectionRequest(Times.Exactly(3));
-            //_httpTestHelper.VerifyGetCertKeyRequest(Times.Exactly(3));
-            //_httpTestHelper.VerifyGetTokenRequest(omsConnection, Times.Exactly(3)); // we obtained 3 tokens
+            _httpClientMock.VerifyNoOutstandingExpectation();
         }
 
         [DebuggerStepThrough]
