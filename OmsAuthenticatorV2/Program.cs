@@ -8,7 +8,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add HttpClientFactory to the container in order to be able to mock it in the tests
 builder.Services.AddHttpClient(OmsTokenAdapter.HttpClientName, client => client.BaseAddress = new Uri("http://markirovka")); // TODO: get from config
 builder.Services.AddHttpClient(DtabacTokenAdapter.HttpClientName, client => client.BaseAddress = new Uri("http://dtabac")); // TODO: get from config
-builder.Services.AddSingleton(new SystemTime());
+builder.Services.AddSingleton<ISystemTime>(new SystemTime());
+
+builder.Host.UseWindowsService();
 
 var app = builder.Build();
 

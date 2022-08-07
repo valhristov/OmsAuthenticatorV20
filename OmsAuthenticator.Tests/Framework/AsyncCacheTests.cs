@@ -17,54 +17,40 @@ namespace OmsAuthenticator.Tests.Framework
             cache = new AsyncResultCache<string, int>(TimeSpan.FromMilliseconds(500), () => _systemTimeMock.UtcNow);
         }
 
-        private T GetValue<T>(Result<T> result) =>
-            result switch
-            {
-                Result<T>.Success success => success.Value,
-                _ => throw new NotImplementedException(),
-            };
-
-        private IEnumerable<string> GetErrors<T>(Result<T> result) =>
-            result switch
-            {
-                Result<T>.Failure failure => failure.Errors,
-                _ => throw new NotImplementedException(),
-            };
-
         [TestMethod]
         public async Task Success_Result_Expires_After_Configured_Time()
         {
             var result1 = await cache.AddOrUpdate("a", NextSuccess);
-            GetValue(result1).Should().Be(1); // cache miss
+            result1.GetValue().Should().Be(1); // cache miss
 
             _systemTimeMock.Wait(TimeSpan.FromMilliseconds(500));
 
             var result2 = await cache.AddOrUpdate("a", NextSuccess);
-            GetValue(result2).Should().Be(2); // cache miss
+            result2.GetValue().Should().Be(2); // cache miss
             var result3 = await cache.AddOrUpdate("a", NextSuccess);
-            GetValue(result3).Should().Be(2); // cache hit
+            result3.GetValue().Should().Be(2); // cache hit
         }
 
         [TestMethod]
         public async Task Success_Result_Is_Persisted_In_Cache()
         {
             var result1 = await cache.AddOrUpdate("a", NextSuccess);
-            GetValue(result1).Should().Be(1); // cache miss
+            result1.GetValue().Should().Be(1); // cache miss
             var result2 = await cache.AddOrUpdate("a", NextSuccess);
-            GetValue(result2).Should().Be(1); // cache hit
+            result2.GetValue().Should().Be(1); // cache hit
             var result3 = await cache.AddOrUpdate("a", NextSuccess);
-            GetValue(result3).Should().Be(1); // cache hit
+            result3.GetValue().Should().Be(1); // cache hit
         }
 
         [TestMethod]
         public async Task Failure_Result_Is_Not_Persisted_In_Cache()
         {
             var result1 = await cache.AddOrUpdate("a", NextFailure);
-            GetErrors(result1).Should().BeEquivalentTo(new[] { "1" }); // cache miss
+            result1.GetErrors().Should().BeEquivalentTo(new[] { "1" }); // cache miss
             var result2 = await cache.AddOrUpdate("a", NextFailure);
-            GetErrors(result2).Should().BeEquivalentTo(new[] { "2" }); // cache miss
+            result2.GetErrors().Should().BeEquivalentTo(new[] { "2" }); // cache miss
             var result3 = await cache.AddOrUpdate("a", NextFailure);
-            GetErrors(result3).Should().BeEquivalentTo(new[] { "3" }); // cache miss
+            result3.GetErrors().Should().BeEquivalentTo(new[] { "3" }); // cache miss
         }
 
         [TestMethod]
@@ -98,7 +84,7 @@ namespace OmsAuthenticator.Tests.Framework
                 );
 
             var result1 = await cache.AddOrUpdate("a", NextSuccess); // this should get cleared in the end
-            GetValue(result1).Should().Be(1);
+            result1.GetValue().Should().Be(1);
 
             void GetValueInLoop()
             {
