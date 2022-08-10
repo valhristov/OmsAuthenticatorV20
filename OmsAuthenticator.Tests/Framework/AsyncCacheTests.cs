@@ -8,72 +8,81 @@ namespace OmsAuthenticator.Tests.Framework
     [TestClass]
     public class AsyncCacheTests
     {
-        private readonly SystemTimeMock _systemTimeMock;
-        private readonly AsyncResultCache<string, int> cache;
+        private SystemTimeMock SystemTimeMock { get; }
+        private AsyncTokenResultCache Cache { get; }
 
+        private static readonly TimeSpan Expiration = TimeSpan.FromHours(1);
+        
         public AsyncCacheTests()
         {
-            _systemTimeMock = new SystemTimeMock();
-            cache = new AsyncResultCache<string, int>(TimeSpan.FromMilliseconds(500), () => _systemTimeMock.UtcNow);
+            SystemTimeMock = new SystemTimeMock();
+            Cache = new AsyncTokenResultCache(() => SystemTimeMock.UtcNow);
         }
 
         [TestMethod]
         public async Task Success_Result_Expires_After_Configured_Time()
         {
-            var result1 = await cache.AddOrUpdate("a", NextSuccess);
-            result1.GetValue().Should().Be(1); // cache miss
+            var tokenKey = new TokenKey("a", "a", "a");
 
-            _systemTimeMock.Wait(TimeSpan.FromMilliseconds(500));
+            var result1 = await Cache.AddOrUpdate(tokenKey, NextSuccess);
+            result1.GetValue().Value.Should().Be("1"); // cache miss
 
-            var result2 = await cache.AddOrUpdate("a", NextSuccess);
-            result2.GetValue().Should().Be(2); // cache miss
-            var result3 = await cache.AddOrUpdate("a", NextSuccess);
-            result3.GetValue().Should().Be(2); // cache hit
+            SystemTimeMock.Wait(Expiration + TimeSpan.FromSeconds(1));
+
+            var result2 = await Cache.AddOrUpdate(tokenKey, NextSuccess);
+            result2.GetValue().Value.Should().Be("2"); // cache miss
+            var result3 = await Cache.AddOrUpdate(tokenKey, NextSuccess);
+            result3.GetValue().Value.Should().Be("2"); // cache hit
         }
 
         [TestMethod]
         public async Task Success_Result_Is_Persisted_In_Cache()
         {
-            var result1 = await cache.AddOrUpdate("a", NextSuccess);
-            result1.GetValue().Should().Be(1); // cache miss
-            var result2 = await cache.AddOrUpdate("a", NextSuccess);
-            result2.GetValue().Should().Be(1); // cache hit
-            var result3 = await cache.AddOrUpdate("a", NextSuccess);
-            result3.GetValue().Should().Be(1); // cache hit
+            var tokenKey = new TokenKey("a", "a", "a");
+
+            var result1 = await Cache.AddOrUpdate(tokenKey, NextSuccess);
+            result1.GetValue().Value.Should().Be("1"); // cache miss
+            var result2 = await Cache.AddOrUpdate(tokenKey, NextSuccess);
+            result2.GetValue().Value.Should().Be("1"); // cache hit
+            var result3 = await Cache.AddOrUpdate(tokenKey, NextSuccess);
+            result3.GetValue().Value.Should().Be("1"); // cache hit
         }
 
         [TestMethod]
         public async Task Failure_Result_Is_Not_Persisted_In_Cache()
         {
-            var result1 = await cache.AddOrUpdate("a", NextFailure);
+            var tokenKey = new TokenKey("a", "a", "a");
+            var result1 = await Cache.AddOrUpdate(tokenKey, NextFailure);
             result1.GetErrors().Should().BeEquivalentTo(new[] { "1" }); // cache miss
-            var result2 = await cache.AddOrUpdate("a", NextFailure);
+            var result2 = await Cache.AddOrUpdate(tokenKey, NextFailure);
             result2.GetErrors().Should().BeEquivalentTo(new[] { "2" }); // cache miss
-            var result3 = await cache.AddOrUpdate("a", NextFailure);
+            var result3 = await Cache.AddOrUpdate(tokenKey, NextFailure);
             result3.GetErrors().Should().BeEquivalentTo(new[] { "3" }); // cache miss
         }
 
         [TestMethod]
         public async Task Clear_Removes_Stale_Items()
         {
-            await cache.AddOrUpdate("a", NextSuccess); // this should get cleared in the end
-            cache.Count.Should().Be(1);
+            await Cache.AddOrUpdate(new TokenKey("a", "a", "a"), NextSuccess); // this should get cleared in the end
+            Cache.Count.Should().Be(1);
 
-            _systemTimeMock.Wait(TimeSpan.FromMilliseconds(300));
+            SystemTimeMock.Wait(Expiration / 2);
 
-            await cache.AddOrUpdate("b", NextSuccess); // this should stay in cache in the end
-            cache.Count.Should().Be(2);
+            await Cache.AddOrUpdate(new TokenKey("b", "b", "b"), NextSuccess); // this should stay in cache in the end
+            Cache.Count.Should().Be(2);
 
-            _systemTimeMock.Wait(TimeSpan.FromMilliseconds(300));
+            SystemTimeMock.Wait(Expiration);
 
             // 600ms passed after resultA was added to cache, so this call should remove it
-            cache.Cleanup();
-            cache.Count.Should().Be(1);
+            Cache.Cleanup();
+            Cache.Count.Should().Be(1);
         }
 
         [TestMethod]
         public async Task Concurrent_Access()
         {
+            var tokenKey = new TokenKey("oms-id", "connection-id", "request-id");
+
             // Run 5 concurent tasks to get the same item from the cache; all calls should receive the same value
             Task.WaitAll(
                 Task.Run(GetValueInLoop),
@@ -83,38 +92,39 @@ namespace OmsAuthenticator.Tests.Framework
                 Task.Run(GetValueInLoop)
                 );
 
-            var result1 = await cache.AddOrUpdate("a", NextSuccess); // this should get cleared in the end
-            result1.GetValue().Should().Be(1);
+            var result1 = await Cache.AddOrUpdate(tokenKey, NextSuccess); // this should get cleared in the end
+            result1.GetValue().Value.Should().Be("1");
 
             void GetValueInLoop()
             {
                 for (int i = 0; i < 10000; i++)
                 {
-                    cache.AddOrUpdate("a", NextSuccess);
+                    Cache.AddOrUpdate(tokenKey, NextSuccess);
                 }
             }
         }
 
         private int _counterSuccess;
 
-        public async Task<Result<int>> NextSuccess()
+        private Task<Result<Token>> NextSuccess(TokenKey key)
         {
             Debug.WriteLine("NextSuccess called");
 
-            await Task.Delay(100);
+            var token = new Token(
+                Interlocked.Increment(ref _counterSuccess).ToString(),
+                key.RequestId,
+                SystemTimeMock.UtcNow.Add(Expiration));
 
-            return Result.Success(Interlocked.Increment(ref _counterSuccess));
+            return Task.FromResult(Result.Success(token));
         }
 
         private int _counterFailure;
 
-        public async Task<Result<int>> NextFailure()
+        private Task<Result<Token>> NextFailure(TokenKey key)
         {
             Debug.WriteLine("NextFailure called");
 
-            await Task.Delay(100);
-
-            return Result.Failure<int>(Interlocked.Increment(ref _counterFailure).ToString());
+            return Task.FromResult(Result.Failure<Token>(Interlocked.Increment(ref _counterFailure).ToString()));
         }
     }
 }

@@ -5,30 +5,30 @@ using OmsAuthenticator.Framework;
 
 namespace OmsAuthenticator.ApiAdapters.GISMT.V3
 {
-    public class OmsTokenAdapter : IOmsTokenAdapter
+    public class GisAdapterV3 : IOmsTokenAdapter
     {
-        public static readonly string HttpClientName = "gismt";
+        public const string AdapterName = "gis-v3";
 
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly Func<string, Token> _tokenFactory;
+        private readonly Func<HttpClient> _getHttpClient;
+        private readonly Func<DateTimeOffset> _getExpiration;
 
-        public OmsTokenAdapter(IHttpClientFactory httpClientFactory, Func<string, Token> tokenFactory)
+        public GisAdapterV3(Func<HttpClient> getHttpClient, Func<DateTimeOffset> getExpiration)
         {
-            _httpClientFactory = httpClientFactory;
-            _tokenFactory = tokenFactory;
+            _getHttpClient = getHttpClient;
+            _getExpiration = getExpiration;
         }
 
         private record AuthData(string Uuid, string Data);
 
         public async Task<Result<Token>> GetOmsTokenAsync(TokenKey tokenKey)
         {
-            var httpClient = _httpClientFactory.CreateClient(HttpClientName);
+            var httpClient = _getHttpClient();
 
             var authDataResult = await GetAuthData(httpClient);
 
             var signedDataResult = await authDataResult.ConvertAsync(async authData => await SignData(authData));
 
-            var tokenResult = await signedDataResult.ConvertAsync(async authData => await GetToken(tokenKey.ConnectionId, authData, httpClient));
+            var tokenResult = await signedDataResult.ConvertAsync(async authData => await GetToken(tokenKey, authData, httpClient));
 
             return tokenResult;
         }
@@ -38,10 +38,10 @@ namespace OmsAuthenticator.ApiAdapters.GISMT.V3
 
         private async Task<Result<AuthData>> GetAuthData(HttpClient httpClient)
         {
-            const string _url = "/api/v3/auth/cert/key";
+            const string url = "/api/v3/auth/cert/key";
 
             var result = await HttpResult.FromHttpResponseAsync<AuthDataResponse>(
-                async () => await httpClient.GetAsync(_url));
+                async () => await httpClient.GetAsync(url));
 
             return result.Convert(ToAuthData);
 
@@ -51,20 +51,26 @@ namespace OmsAuthenticator.ApiAdapters.GISMT.V3
                     : Result.Failure<AuthData>("Response does not contain uuid or data");
         }
 
-        private async Task<Result<Token>> GetToken(string omsConnection, AuthData authData, HttpClient httpClient)
+        private async Task<Result<Token>> GetToken(TokenKey tokenKey, AuthData authData, HttpClient httpClient)
         {
-            const string _url = "/api/v3/auth/cert";
+            var url = $"/api/v3/auth/cert/{tokenKey.ConnectionId}";
 
-            var content = new StringContent(JsonSerializer.Serialize(new GetTokenRequest { Data = authData.Data, Uuid = authData.Uuid }), Encoding.Unicode, "application/json");
+            var tokenRequest = new GetTokenRequest
+            {
+                Data = authData.Data,
+                Uuid = authData.Uuid,
+            };
+
+            var content = new StringContent(JsonSerializer.Serialize(tokenRequest), Encoding.Unicode, "application/json");
 
             var result = await HttpResult.FromHttpResponseAsync<AuthTokenResponse>(
-                async () => await httpClient.PostAsync($"{_url}/{omsConnection}", content));
+                async () => await httpClient.PostAsync(url, content));
 
             return result.Convert(ToToken);
 
             Result<Token> ToToken(AuthTokenResponse response) =>
                 response.Token != null && response.ErrorCode == null
-                    ? Result.Success(_tokenFactory(response.Token))
+                    ? Result.Success(new Token(response.Token, tokenKey.RequestId, _getExpiration()))
                     : Result.Failure<Token>($"GIS-MT returned status OK, but no token. " +
                                             $"Error Code: '{response.ErrorCode}', " +
                                             $"Error Message: '{response.ErrorMessage}', " +

@@ -1,10 +1,11 @@
 ﻿using System.Diagnostics;
 using System.Net;
 using System.Text;
-using System.Text.Json;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json;
 using OmsAuthenticator.Api.V1;
 using RichardSzalay.MockHttp;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace OmsAuthenticator.Tests.Api.V1
 {
@@ -23,8 +24,8 @@ namespace OmsAuthenticator.Tests.Api.V1
             _client = _app.CreateClient();
         }
 
-        private async Task<HttpResponseMessage> PostAsync(TokenRequest request) => 
-            await _client.PostAsync("/oms/token", new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json"));
+        private async Task<HttpResponseMessage> PostAsync(object request) => 
+            await _client.PostAsync("/oms/token", new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json"));
 
         private void SetupGetTokenRequest(string omsConnection, string data, string token)
         {
@@ -69,7 +70,7 @@ namespace OmsAuthenticator.Tests.Api.V1
             SetupGetCertKeyRequest("the data");
             SetupGetTokenRequest(omsConnection, "the data", "the token 1");
 
-            var result = await PostAsync(new TokenRequest { OmsConnection = omsConnection, OmsId = NewGuid(), RequestId = NewGuid(), });
+            var result = await PostAsync(new { omsConnection = omsConnection, omsId = NewGuid(), requestId = NewGuid(), });
 
             await ResponseShould.BeOkResult(result, "the token 1");
 
@@ -88,13 +89,13 @@ namespace OmsAuthenticator.Tests.Api.V1
             SetupGetCertKeyRequest("the data");
             SetupGetTokenRequest(omsConnection, "the data", "the token");
 
-            var result = await PostAsync(new TokenRequest { OmsConnection = omsConnection, OmsId = omsId, RequestId = requestId, });
+            var result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, });
             await ResponseShould.BeOkResult(result, "the token");
 
-            result = await PostAsync(new TokenRequest { OmsConnection = omsConnection, OmsId = omsId, RequestId = requestId, });
+            result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, });
             await ResponseShould.BeOkResult(result, "the token");
 
-            result = await PostAsync(new TokenRequest { OmsConnection = omsConnection, OmsId = omsId, RequestId = requestId, });
+            result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, });
             await ResponseShould.BeOkResult(result, "the token");
 
             _httpClientMock.VerifyNoOutstandingExpectation();
@@ -115,13 +116,13 @@ namespace OmsAuthenticator.Tests.Api.V1
             SetupGetCertKeyRequest("the data 3");
             SetupGetTokenRequest(omsConnection, "the data 3", "the token 3");
 
-            var result = await PostAsync(new TokenRequest { OmsConnection = omsConnection, OmsId = omsId, RequestId = NewGuid(), });
+            var result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = NewGuid(), });
             await ResponseShould.BeOkResult(result, "the token 1");
 
-            result = await PostAsync(new TokenRequest { OmsConnection = omsConnection, OmsId = omsId, RequestId = NewGuid(), });
+            result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = NewGuid(), });
             await ResponseShould.BeOkResult(result, "the token 2");
 
-            result = await PostAsync(new TokenRequest { OmsConnection = omsConnection, OmsId = omsId, RequestId = NewGuid(), });
+            result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = NewGuid(), });
             await ResponseShould.BeOkResult(result, "the token 3");
 
             _httpClientMock.VerifyNoOutstandingExpectation();
@@ -143,17 +144,17 @@ namespace OmsAuthenticator.Tests.Api.V1
             SetupGetCertKeyRequest("the data 3");
             SetupGetTokenRequest(omsConnection, "the data 3", "the token 3");
 
-            var result = await PostAsync(new TokenRequest { OmsConnection = omsConnection, OmsId = omsId, RequestId = requestId, });
+            var result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, });
             await ResponseShould.BeOkResult(result, "the token 1");
 
             _app.Wait(TimeSpan.FromHours(10)); // wait for the token to expire
 
-            result = await PostAsync(new TokenRequest { OmsConnection = omsConnection, OmsId = omsId, RequestId = requestId, });
+            result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, });
             await ResponseShould.BeOkResult(result, "the token 2");
 
             _app.Wait(TimeSpan.FromHours(10)); // wait for the token to expire
 
-            result = await PostAsync(new TokenRequest { OmsConnection = omsConnection, OmsId = omsId, RequestId = requestId, });
+            result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, });
             await ResponseShould.BeOkResult(result, "the token 3");
 
             _httpClientMock.VerifyNoOutstandingExpectation();

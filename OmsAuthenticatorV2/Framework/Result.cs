@@ -13,6 +13,27 @@ namespace OmsAuthenticator.Framework
 
         public static Result<T> Success<T>(T value) =>
             new Result<T>.Success(value);
+
+        public static Result<IEnumerable<T>> Combine<T>(IEnumerable<Result<T>> results)
+        {
+            var lookup = results.ToLookup(x => x.IsFailure);
+            return lookup[true].Any() // failures
+                ? Failure<IEnumerable<T>>(lookup[true].OfType<Result<T>.Failure>().SelectMany(x => x.Errors).ToImmutableArray())
+                : Success<IEnumerable<T>>(lookup[false].OfType<Result<T>.Success>().Select(x => x.Value).ToImmutableArray());
+        }
+
+        public static Result<(T1, T2)> Combine<T1, T2>(Result<T1> r1, Result<T2> r2)
+        {
+            if (r1 is Result<T1>.Failure failure1)
+            {
+                return Failure<(T1, T2)>(failure1.Errors);
+            }
+            if (r2 is Result<T2>.Failure failure2)
+            {
+                return Failure<(T1, T2)>(failure2.Errors);
+            }
+            return Success((((Result<T1>.Success)r1).Value, ((Result<T2>.Success)r2).Value));
+        }
     }
 
     public class Result<T>

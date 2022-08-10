@@ -3,39 +3,36 @@ using System.Diagnostics;
 
 namespace OmsAuthenticator.Framework
 {
-    public class Cache<TKey, TValue>
+    public abstract class LazyCache<TKey, TValue>
         where TKey : notnull
     {
-        protected readonly ConcurrentDictionary<TKey, CacheEntry> _cache = new();
-        private readonly TimeSpan _lifetime;
-        private readonly Func<DateTimeOffset> _getSystemTime;
+        protected readonly ConcurrentDictionary<TKey, Lazy<TValue>> _cache = new();
+        private readonly Func<DateTimeOffset> _getSystemTimeUtc;
 
-        public Cache(TimeSpan lifetime, Func<DateTimeOffset> getSystemTime)
+        public LazyCache(Func<DateTimeOffset> getSystemTimeUtc)
         {
-            _lifetime = lifetime;
-            _getSystemTime = getSystemTime;
+            _getSystemTimeUtc = getSystemTimeUtc;
         }
 
+        protected DateTimeOffset UtcNow() => _getSystemTimeUtc();
+
         [DebuggerStepThrough]
-        public TValue AddOrUpdate(TKey key, Func<TValue> factory)
+        public TValue AddOrUpdate(TKey key, Func<TKey, TValue> valueFactory)
         {
             return _cache
                 .AddOrUpdate(key,
-                    k => CreateEntry(factory),
-                    (k, old) => ShouldReplaceCacheEntry(old) ? CreateEntry(factory) : old)
+                    k => new Lazy<TValue>(() => valueFactory(k)),
+                    (k, old) => ShouldReplaceCacheEntry(old) ? new Lazy<TValue>(() => valueFactory(k)) : old)
+                // This will invoke valueFactory if an entry with the specified key is missing or should be replaced
                 .Value;
-
-            CacheEntry CreateEntry(Func<TValue> factory) =>
-                new CacheEntry(factory, _getSystemTime().Add(_lifetime));
         }
 
-        protected virtual bool ShouldReplaceCacheEntry(CacheEntry entry) =>
-            entry.ExpirationDate <= _getSystemTime();
+        protected virtual bool ShouldReplaceCacheEntry(Lazy<TValue> entry) =>
+            false;
 
         public void Cleanup()
         {
             var expired = _cache.Where(x => ShouldReplaceCacheEntry(x.Value)).ToList();
-
             foreach (var item in expired)
             {
                 _cache.TryRemove(item.Key, out _);
@@ -43,40 +40,27 @@ namespace OmsAuthenticator.Framework
         }
 
         public int Count => _cache.Count;
-
-        protected class CacheEntry : Lazy<TValue>
-        {
-            public DateTimeOffset ExpirationDate { get; }
-
-            public CacheEntry(Func<TValue> factory, DateTimeOffset expirationDate) : base(factory)
-            {
-                Debug.WriteLine("New cache entry created");
-                ExpirationDate = expirationDate;
-            }
-        }
     }
 
-    public class AsyncResultCache<TKey, TValue> : Cache<TKey, Task<Result<TValue>>>
-        where TKey : notnull
+    public class AsyncTokenResultCache : LazyCache<TokenKey, Task<Result<Token>>>
     {
-        public AsyncResultCache(TimeSpan lifetime, Func<DateTimeOffset> getSystemTime) : base(lifetime, getSystemTime)
+        public AsyncTokenResultCache(Func<DateTimeOffset> getSystemTime) : base(getSystemTime)
         { }
 
-        protected override bool ShouldReplaceCacheEntry(CacheEntry entry) =>
-            base.ShouldReplaceCacheEntry(entry) ||
-            (entry.IsValueCreated && entry.Value.IsCompleted && entry.Value.Result.IsFailure);
+        protected override bool ShouldReplaceCacheEntry(Lazy<Task<Result<Token>>> entry) =>
+            entry.IsValueCreated &&
+            entry.Value.IsCompleted &&
+            entry.Value.Result.Select(token => token.Expires < UtcNow(), errors => true);
 
-        public Task<Result<TValue>> FindLongestExpirationItem(Func<TKey, bool> predicate)
+        public Task<Result<Token>> FindEntry(Predicate<TokenKey> predicate)
         {
-            var task = _cache
+            return _cache
                 .Where(kv => predicate(kv.Key)) // only entries that match the predicate
                 .Select(kv => kv.Value)
                 .Where(entry => !ShouldReplaceCacheEntry(entry))
-                .OrderByDescending(entry => entry.ExpirationDate)
                 .Select(entry => entry.Value)
-                .FirstOrDefault();
-
-            return task ?? Task.FromResult(Result.Success<TValue>(default!));
+                .DefaultIfEmpty(Task.FromResult(Result.Failure<Token>("Token does not exist")))
+                .First();
         }
     }
 }

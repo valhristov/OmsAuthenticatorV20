@@ -23,4 +23,16 @@
     <ProjectReference Include="..\OmsAuthenticatorV2\OmsAuthenticatorV2.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="Api\V1\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="Api\V1\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Api\V1\**" />
+  </ItemGroup>
+
 </Project>

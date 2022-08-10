@@ -6,10 +6,10 @@ namespace OmsAuthenticator.Api.V1
 {
     public class TokenController
     {
-        private readonly AsyncResultCache<TokenKey, Token> _cache;
+        private readonly AsyncTokenResultCache _cache;
         private readonly IOmsTokenAdapter _tokenAdapter;
 
-        public TokenController(AsyncResultCache<TokenKey, Token> cache, IOmsTokenAdapter tokenAdapter)
+        public TokenController(AsyncTokenResultCache cache, IOmsTokenAdapter tokenAdapter)
         {
             _cache = cache;
             _tokenAdapter = tokenAdapter;
@@ -46,7 +46,7 @@ namespace OmsAuthenticator.Api.V1
 
             var tokenKey = new TokenKey(request.OmsId, request.OmsConnection, request.RequestId ?? Guid.NewGuid().ToString());
 
-            var tokenResult = await _cache.AddOrUpdate(tokenKey, async () => await _tokenAdapter.GetOmsTokenAsync(tokenKey));
+            var tokenResult = await _cache.AddOrUpdate(tokenKey, async key => await _tokenAdapter.GetOmsTokenAsync(key));
 
             return tokenResult.Select(
                 token => Results.Ok(new TokenResponse(token.Value, tokenKey.RequestId, token.Expires)),

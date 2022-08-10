@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc.Testing;
+﻿using System.Text;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Moq;
-using OmsAuthenticator.ApiAdapters.GISMT.V3;
 using OmsAuthenticator.Framework;
 
 namespace OmsAuthenticator.Tests
@@ -10,25 +11,29 @@ namespace OmsAuthenticator.Tests
     public class OmsAuthenticatorApp : WebApplicationFactory<Program>
     {
         private readonly Mock<IHttpClientFactory> _httpClientFactoryMock;
-        private SystemTimeMock _systemTimeMock;
+        private readonly SystemTimeMock _systemTimeMock;
+        private readonly string _configurationJson;
 
-        public OmsAuthenticatorApp(Func<HttpClient> getHttpClient)
+        public GisMtHelper GisMtApi { get; } = new GisMtHelper();
+
+        public OmsAuthenticatorApp(string configurationJson)
         {
+            _systemTimeMock = new SystemTimeMock();
+
             _httpClientFactoryMock = new Mock<IHttpClientFactory>();
             _httpClientFactoryMock
-                .Setup(x => x.CreateClient(OmsTokenAdapter.HttpClientName))
-                .Returns(() =>
-                {
-                    var client = getHttpClient();
-                    client.BaseAddress = new Uri("http://test.com");
-                    return client;
-                });
-
-            _systemTimeMock = new SystemTimeMock();
+                .Setup(x => x.CreateClient(It.IsAny<string>()))
+                .Returns(() => GisMtApi.GetHttpClient());
+            _configurationJson = configurationJson;
         }
 
         protected override IHost CreateHost(IHostBuilder builder)
         {
+            builder.ConfigureAppConfiguration((context, configBuilder) =>
+            {
+                configBuilder.Sources.Clear();
+                configBuilder.AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(_configurationJson)));
+            });
             builder.ConfigureServices(services =>
             {
                 services.AddSingleton(_httpClientFactoryMock.Object);
