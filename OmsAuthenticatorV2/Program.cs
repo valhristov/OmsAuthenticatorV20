@@ -1,16 +1,22 @@
 using System.Collections.Immutable;
-using OmsAuthenticator;
 using OmsAuthenticator.Api.V2;
+using OmsAuthenticator.ApiAdapters;
 using OmsAuthenticator.ApiAdapters.GISMT.V3;
 using OmsAuthenticator.Configuration;
 using OmsAuthenticator.Framework;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(
+    new WebApplicationOptions
+    {
+        ContentRootPath = AppContext.BaseDirectory, // needed for builder.Host.UseWindowsService() 
+        Args = args,
+        ApplicationName = System.Diagnostics.Process.GetCurrentProcess().ProcessName,
+    });
 
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<ISystemTime>(new SystemTime());
 
-builder.Host.UseWindowsService(); // TODO: fix this
+builder.Host.UseWindowsService();
 
 var app = builder.Build();
 
@@ -25,21 +31,37 @@ var httpClientFactory = app.Services.GetRequiredService<IHttpClientFactory>();
 
 var configuration = app.Services.GetRequiredService<IConfiguration>();
 
-var configResult = AuthenticatorConfig.Get(configuration)
-    .Convert(GetValidConfiguration);
-
-var messages = configResult.Select(
-    StartApplication,
-    errors => errors);
+var messages = AuthenticatorConfig.Get(configuration)
+    .Convert(GetValidConfiguration)
+    .Convert(GetAdapterInstances)
+    .Select(StartApplication, errors => errors);
 
 foreach (var message in messages)
 {
     Console.WriteLine(message);
 }
 
+Result<ImmutableArray<(TokenProviderConfig, IOmsTokenAdapter)>> GetAdapterInstances(AuthenticatorConfig config) =>
+    Result.Success(config.TokenProviders.Select(x =>
+    {
+        var adapter = x.Adapter switch
+        {
+            GisAdapterV3.AdapterName => new GisAdapterV3(
+                    () =>
+                    {
+                        var client = httpClientFactory.CreateClient();
+                        client.BaseAddress = new Uri(x.Url);
+                        return client;
+                    },
+                    () => systemTime.UtcNow.Add(x.Expiration)),
+            _ => throw new NotSupportedException(""),
+        };
+        return (x, (IOmsTokenAdapter)adapter);
+    }).ToImmutableArray());
+
 Result<AuthenticatorConfig> GetValidConfiguration(AuthenticatorConfig config)
 {
-    var notSupportedAdapters = config.TokenProviders.TokenProviders.Where(x => x.Adapter != GisAdapterV3.AdapterName);
+    var notSupportedAdapters = config.TokenProviders.Where(x => x.Adapter != GisAdapterV3.AdapterName);
     if (notSupportedAdapters.Any())
     {
         return Result.Failure<AuthenticatorConfig>("The configured token providers are not supported: " + string.Join(", ", notSupportedAdapters.Select(x => x.Key)));
@@ -47,29 +69,15 @@ Result<AuthenticatorConfig> GetValidConfiguration(AuthenticatorConfig config)
     return Result.Success(config);
 }
 
-ImmutableArray<string> StartApplication(AuthenticatorConfig config)
+ImmutableArray<string> StartApplication(ImmutableArray<(TokenProviderConfig Config, IOmsTokenAdapter Instance)> adapters)
 {
-    foreach (var tokenProviderConfig in config.TokenProviders.TokenProviders)
+    foreach (var adapter in adapters)
     {
-        var controller = tokenProviderConfig.Adapter switch
-        {
-            GisAdapterV3.AdapterName => new TokenControllerV2(cache, new GisAdapterV3(
-                    () =>
-                    {
-                        var client = httpClientFactory.CreateClient();
-                        client.BaseAddress = new Uri(tokenProviderConfig.Url);
-                        return client;
-                    },
-                    () => systemTime.UtcNow.Add(tokenProviderConfig.Expiration))),
-            _ => throw new NotSupportedException(""),
-        };
-
-        app.MapGet($"/api/v2/{tokenProviderConfig.Key}/oms/token/", controller.GetOmsTokenAsync);
-        // app.MapGet($"/api/v2/token/true/{tokenProviderConfig.Key}", controller.GetTrueTokenAsync);
+        app.MapGet($"/api/v2/{adapter.Config.Key}/oms/token/", new TokenControllerV2(cache, adapter.Instance).GetOmsTokenAsync);
     }
-    
+
     app.Run();
-    
+
     return ImmutableArray.Create("Successfully stopped the application.");
 }
 

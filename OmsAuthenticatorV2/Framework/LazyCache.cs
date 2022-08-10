@@ -7,14 +7,12 @@ namespace OmsAuthenticator.Framework
         where TKey : notnull
     {
         protected readonly ConcurrentDictionary<TKey, Lazy<TValue>> _cache = new();
-        private readonly Func<DateTimeOffset> _getSystemTimeUtc;
+        protected Func<DateTimeOffset> UtcNow { get; }
 
         public LazyCache(Func<DateTimeOffset> getSystemTimeUtc)
         {
-            _getSystemTimeUtc = getSystemTimeUtc;
+            UtcNow = getSystemTimeUtc;
         }
-
-        protected DateTimeOffset UtcNow() => _getSystemTimeUtc();
 
         [DebuggerStepThrough]
         public TValue AddOrUpdate(TKey key, Func<TKey, TValue> valueFactory)
@@ -40,27 +38,5 @@ namespace OmsAuthenticator.Framework
         }
 
         public int Count => _cache.Count;
-    }
-
-    public class AsyncTokenResultCache : LazyCache<TokenKey, Task<Result<Token>>>
-    {
-        public AsyncTokenResultCache(Func<DateTimeOffset> getSystemTime) : base(getSystemTime)
-        { }
-
-        protected override bool ShouldReplaceCacheEntry(Lazy<Task<Result<Token>>> entry) =>
-            entry.IsValueCreated &&
-            entry.Value.IsCompleted &&
-            entry.Value.Result.Select(token => token.Expires < UtcNow(), errors => true);
-
-        public Task<Result<Token>> FindEntry(Predicate<TokenKey> predicate)
-        {
-            return _cache
-                .Where(kv => predicate(kv.Key)) // only entries that match the predicate
-                .Select(kv => kv.Value)
-                .Where(entry => !ShouldReplaceCacheEntry(entry))
-                .Select(entry => entry.Value)
-                .DefaultIfEmpty(Task.FromResult(Result.Failure<Token>("Token does not exist")))
-                .First();
-        }
     }
 }
