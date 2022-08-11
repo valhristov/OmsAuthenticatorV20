@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OmsAuthenticatorV2", "OmsAu
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OmsAuthenticator.Tests", "OmsAuthenticator.Tests\OmsAuthenticator.Tests.csproj", "{31432044-3164-4A00-AC57-B84B0D954E60}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SignData", "SignData\SignData.csproj", "{44175EFA-FC98-4FF5-82D8-19D825782E12}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{31432044-3164-4A00-AC57-B84B0D954E60}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{31432044-3164-4A00-AC57-B84B0D954E60}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{31432044-3164-4A00-AC57-B84B0D954E60}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44175EFA-FC98-4FF5-82D8-19D825782E12}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44175EFA-FC98-4FF5-82D8-19D825782E12}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44175EFA-FC98-4FF5-82D8-19D825782E12}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44175EFA-FC98-4FF5-82D8-19D825782E12}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

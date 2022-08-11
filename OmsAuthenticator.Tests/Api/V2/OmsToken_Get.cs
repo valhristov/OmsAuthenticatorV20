@@ -5,27 +5,34 @@ namespace OmsAuthenticator.Tests.Api.V2
     [TestClass]
     public class OmsToken_Get
     {
+        private static readonly TimeSpan Expiration = TimeSpan.FromHours(10);
+
         private OmsAuthenticatorApp App { get; }
         private HttpClient Client { get; }
 
         public OmsToken_Get()
         {
-            App = new OmsAuthenticatorApp(@"{
-  ""Authenticator"": {
-    ""SignDataPath"": "".\\SignData.exe"",
-    ""TokenProviders"": {
-      ""key1"": {
+            // Using "integration tests" for SignDataPath to short-cirquit the signer
+            App = new OmsAuthenticatorApp($@"{{
+  ""Authenticator"": {{
+    ""SignDataPath"": ""integration tests"",
+    ""TokenProviders"": {{
+      ""key1"": {{
         ""Adapter"": ""gis-v3"",
         ""Certificate"": ""111"",
-        ""Url"": ""https://demo.crpt.ru""
-      }
-    }
-  }
-}");
+        ""Url"": ""https://demo.crpt.ru"",
+        ""Expiration"": ""{Expiration}""
+      }}
+    }}
+  }}
+}}");
             Client = App.CreateClient();
         }
 
         private string NewGuid() => Guid.NewGuid().ToString();
+
+        private void WaitForTokenToExpire() =>
+            App.Wait(Expiration.Add(TimeSpan.FromSeconds(1)));
 
         [DataTestMethod]
         [DataRow("/api/v2/key1/oms/token")]
@@ -134,12 +141,12 @@ namespace OmsAuthenticator.Tests.Api.V2
             var result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
             await ResponseShould.BeOkResult(result, "the token 1", requestId);
 
-            App.Wait(TimeSpan.FromHours(10)); // wait for the token to expire
+            WaitForTokenToExpire();
 
             result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
             await ResponseShould.BeOkResult(result, "the token 2", requestId);
 
-            App.Wait(TimeSpan.FromHours(10)); // wait for the token to expire
+            WaitForTokenToExpire();
 
             result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
             await ResponseShould.BeOkResult(result, "the token 3", requestId);
@@ -170,5 +177,6 @@ namespace OmsAuthenticator.Tests.Api.V2
             //_httpClientMock.VerifyNoOutstandingExpectation();
         }
 
+        // TODO: GIS MT returns errors
     }
 }

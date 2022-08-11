@@ -4,6 +4,7 @@ using OmsAuthenticator.ApiAdapters;
 using OmsAuthenticator.ApiAdapters.GISMT.V3;
 using OmsAuthenticator.Configuration;
 using OmsAuthenticator.Framework;
+using OmsAuthenticator.Signing;
 
 var builder = WebApplication.CreateBuilder(
     new WebApplicationOptions
@@ -26,13 +27,12 @@ if (app.Environment.IsDevelopment()) { }
 app.UseHttpsRedirection();
 
 var systemTime = app.Services.GetRequiredService<ISystemTime>();
-var cache = new AsyncTokenResultCache(() => systemTime.UtcNow);
 var httpClientFactory = app.Services.GetRequiredService<IHttpClientFactory>();
-
 var configuration = app.Services.GetRequiredService<IConfiguration>();
 
-var messages = AuthenticatorConfig.Get(configuration)
-    .Convert(GetValidConfiguration)
+var cache = new AsyncTokenResultCache(() => systemTime.UtcNow);
+
+var messages = AuthenticatorConfig.Create(configuration)
     .Convert(GetAdapterInstances)
     .Select(StartApplication, errors => errors);
 
@@ -46,28 +46,11 @@ Result<ImmutableArray<(TokenProviderConfig, IOmsTokenAdapter)>> GetAdapterInstan
     {
         var adapter = x.Adapter switch
         {
-            GisAdapterV3.AdapterName => new GisAdapterV3(
-                    () =>
-                    {
-                        var client = httpClientFactory.CreateClient();
-                        client.BaseAddress = new Uri(x.Url);
-                        return client;
-                    },
-                    () => systemTime.UtcNow.Add(x.Expiration)),
+            GisAdapterV3.AdapterName => new GisAdapterV3(x, httpClientFactory, systemTime, new ConsoleSignData(config.Signer.Path)),
             _ => throw new NotSupportedException(""),
         };
         return (x, (IOmsTokenAdapter)adapter);
     }).ToImmutableArray());
-
-Result<AuthenticatorConfig> GetValidConfiguration(AuthenticatorConfig config)
-{
-    var notSupportedAdapters = config.TokenProviders.Where(x => x.Adapter != GisAdapterV3.AdapterName);
-    if (notSupportedAdapters.Any())
-    {
-        return Result.Failure<AuthenticatorConfig>("The configured token providers are not supported: " + string.Join(", ", notSupportedAdapters.Select(x => x.Key)));
-    }
-    return Result.Success(config);
-}
 
 ImmutableArray<string> StartApplication(ImmutableArray<(TokenProviderConfig Config, IOmsTokenAdapter Instance)> adapters)
 {

@@ -1,7 +1,9 @@
 ﻿using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using OmsAuthenticator.Configuration;
 using OmsAuthenticator.Framework;
+using OmsAuthenticator.Signing;
 
 namespace OmsAuthenticator.ApiAdapters.GISMT.V3
 {
@@ -9,20 +11,25 @@ namespace OmsAuthenticator.ApiAdapters.GISMT.V3
     {
         public const string AdapterName = "gis-v3";
 
-        private readonly Func<HttpClient> _getHttpClient;
-        private readonly Func<DateTimeOffset> _getExpiration;
+        private readonly TokenProviderConfig _config;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ISystemTime _systemTime;
+        private readonly ConsoleSignData _signData;
 
-        public GisAdapterV3(Func<HttpClient> getHttpClient, Func<DateTimeOffset> getExpiration)
+        public GisAdapterV3(TokenProviderConfig config, IHttpClientFactory httpClientFactory, ISystemTime systemTime, ConsoleSignData signData)
         {
-            _getHttpClient = getHttpClient;
-            _getExpiration = getExpiration;
+            _config = config;
+            _httpClientFactory = httpClientFactory;
+            _systemTime = systemTime;
+            _signData = signData;
         }
 
         private record AuthData(string Uuid, string Data);
 
         public async Task<Result<Token>> GetOmsTokenAsync(TokenKey tokenKey)
         {
-            var httpClient = _getHttpClient();
+            var httpClient = _httpClientFactory.CreateClient();
+            httpClient.BaseAddress = new Uri(_config.Url);
 
             var authDataResult = await GetAuthData(httpClient);
 
@@ -33,8 +40,11 @@ namespace OmsAuthenticator.ApiAdapters.GISMT.V3
             return tokenResult;
         }
 
-        // TODO
-        private async Task<Result<AuthData>> SignData(AuthData authData) => Result.Success(authData);
+        private async Task<Result<AuthData>> SignData(AuthData authData)
+        {
+            var result = await _signData.SignAsync(authData.Data, _config.Certificate);
+            return result.Convert(value => Result.Success(new AuthData(authData.Uuid, value)));
+        }
 
         private async Task<Result<AuthData>> GetAuthData(HttpClient httpClient)
         {
@@ -70,12 +80,15 @@ namespace OmsAuthenticator.ApiAdapters.GISMT.V3
 
             Result<Token> ToToken(AuthTokenResponse response) =>
                 response.Token != null && response.ErrorCode == null
-                    ? Result.Success(new Token(response.Token, tokenKey.RequestId, _getExpiration()))
+                    ? Result.Success(new Token(response.Token, tokenKey.RequestId, GetExpiration()))
                     : Result.Failure<Token>($"GIS-MT returned status OK, but no token. " +
                                             $"Error Code: '{response.ErrorCode}', " +
                                             $"Error Message: '{response.ErrorMessage}', " +
                                             $"Error Description: '{response.ErrorDescription}'");
         }
+
+        private DateTimeOffset GetExpiration() =>
+            _systemTime.UtcNow.Add(_config.Expiration);
 
         private class AuthTokenResponse
         {

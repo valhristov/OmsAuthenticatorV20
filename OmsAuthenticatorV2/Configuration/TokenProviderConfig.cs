@@ -1,42 +1,41 @@
 ﻿using System.Collections.Immutable;
+using OmsAuthenticator.ApiAdapters.GISMT.V3;
 using OmsAuthenticator.Framework;
 
 namespace OmsAuthenticator.Configuration;
 
 public record TokenProviderConfig(string Key, string Adapter, string Url, string Certificate, TimeSpan Expiration)
 {
-    public static Result<ImmutableArray<TokenProviderConfig>> CreateMany(IConfigurationSection parent)
-    {
-        var section = parent.GetSection("TokenProviders");
-        if (!section.Exists() || !section.GetChildren().Any())
-        {
-            return Result.Failure<ImmutableArray<TokenProviderConfig>>(
-                "Cannot find required section 'Authenticator:TokenProviders' in appSettings.json or it is empty.");
-        }
+    public static Result<ImmutableArray<TokenProviderConfig>> CreateMany(IConfigurationSection parent) =>
+        parent.GetRequiredSection("TokenProviders")
+            .Convert(section =>
+                Result
+                    .Combine(section.GetChildren().Select(Create)) // return Failure if any of the results is Failure
+                    .Convert(x => Result.Success(x.ToImmutableArray())));
 
-        var results = section.GetChildren().Select(Create).ToArray();
-        return Result.Combine(results) // return Failure if any of the results is Failure
-            .Convert(x => Result.Success(x.ToImmutableArray()));
-    }
+    private static Result<TokenProviderConfig> Create(IConfigurationSection parent) =>
+        Result
+            .Combine(new[]
+            {
+                parent.GetRequiredValue("Adapter").Convert(ValidateAdapter),
+                parent.GetRequiredValue("Url"),
+                parent.GetRequiredValue("Expiration").Convert(ValidateExpiration),
+            })
+            .Convert(values => // Values are validated at this point, in the same order as above
+                Result.Success(new TokenProviderConfig(
+                    parent.Key,
+                    values.ElementAt(0),
+                    values.ElementAt(1),
+                    parent["Certificate"],
+                    TimeSpan.Parse(values.ElementAt(2)))));
 
-    private static Result<TokenProviderConfig> Create(IConfigurationSection parent)
-    {
-        if (parent.GetValue<string>("Adapter") is null)
-        {
-            return Result.Failure<TokenProviderConfig>(
-                $"Cannot find required section '{parent.Path}:Adapter' in appSettings.json or it is empty.");
-        }
-        if (parent.GetValue<string>("Url") is null)
-        {
-            return Result.Failure<TokenProviderConfig>(
-                $"Cannot find required section '{parent.Path}:Url' in appSettings.json or it is empty.");
-        }
-        return Result.Success(
-            new TokenProviderConfig(
-                parent.Key,
-                parent["Adapter"],
-                parent["Url"],
-                parent["Certificate"],
-                parent.GetValue<TimeSpan>("Expiration")));
-    }
+    private static Result<string> ValidateExpiration(string expiration) =>
+        TimeSpan.TryParse(expiration, out _)
+            ? Result.Success(expiration)
+            : Result.Failure<string>($"Configured Expiration '{expiration}' is not a valid time span.");
+
+    private static Result<string> ValidateAdapter(string adapter) =>
+        adapter == GisAdapterV3.AdapterName
+            ? Result.Success(adapter)
+            : Result.Failure<string>($"Configured Adapter '{adapter}' is not supported.");
 }
