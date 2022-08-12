@@ -44,9 +44,9 @@ namespace OmsAuthenticator.Api.V1
                 return Results.BadRequest(new TokenResponse(new[] { $"omsId body parameter is required." }));
             }
 
-            var tokenKey = new TokenKey(request.OmsId, request.OmsConnection, request.RequestId ?? Guid.NewGuid().ToString());
+            var tokenKey = new TokenKey.Oms(request.OmsId, request.OmsConnection, request.RequestId ?? Guid.NewGuid().ToString());
 
-            var tokenResult = await _cache.AddOrUpdate(tokenKey, async key => await _tokenAdapter.GetOmsTokenAsync(key));
+            var tokenResult = await _cache.AddOrUpdate(tokenKey, async _ => await _tokenAdapter.GetOmsTokenAsync(tokenKey));
 
             return tokenResult.Select(
                 token => Results.Ok(new TokenResponse(token.Value, tokenKey.RequestId, token.Expires)),

@@ -1,4 +1,9 @@
 ﻿namespace OmsAuthenticator
 {
-    public record TokenKey(string OmsId, string ConnectionId, string RequestId);
+    public abstract record TokenKey(string? RequestId)
+    {
+        public record Oms(string OmsId, string ConnectionId, string? RequestId) : TokenKey(RequestId);
+
+        public record TrueApi(string? RequestId) : TokenKey(RequestId);
+    }
 }

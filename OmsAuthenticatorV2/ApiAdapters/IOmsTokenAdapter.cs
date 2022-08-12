@@ -6,8 +6,7 @@ namespace OmsAuthenticator.ApiAdapters
     {
         string PathSegment { get; }
 
-        // TODO: add validate token key method to enforce adapter-specific requirements (i.e. connection id to be required)
-
-        Task<Result<Token>> GetOmsTokenAsync(TokenKey tokenKey);
+        Task<Result<Token>> GetOmsTokenAsync(TokenKey.Oms tokenKey);
+        Task<Result<Token>> GetTrueTokenAsync(TokenKey.TrueApi tokenKey);
     }
 }

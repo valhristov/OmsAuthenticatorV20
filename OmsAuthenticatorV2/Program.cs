@@ -38,11 +38,13 @@ AuthenticatorConfig.Create(configuration)
         onSuccess: StartApplication,
         onFailure: PrintMessages);
 
-void StartApplication(ImmutableArray<IOmsTokenAdapter> adapters)
+void StartApplication(IEnumerable<IOmsTokenAdapter> adapters)
 {
     foreach (var adapter in adapters)
     {
-        app.MapGet($"/api/v2/{adapter.PathSegment}/oms/token/", new TokenControllerV2(cache, adapter).GetOmsTokenAsync);
+        var controller = new TokenControllerV2(cache, adapter);
+        app.MapGet($"/api/v2/{adapter.PathSegment}/oms/token/", controller.GetOmsTokenAsync);
+        app.MapGet($"/api/v2/{adapter.PathSegment}/true/token/", controller.GetTrueTokenAsync);
     }
 
     app.Run();
@@ -56,18 +58,21 @@ void PrintMessages(ImmutableArray<string> errors)
     }
 }
 
-Result<ImmutableArray<IOmsTokenAdapter>> GetAdapterInstances(AuthenticatorConfig config)
+Result<IEnumerable<IOmsTokenAdapter>> GetAdapterInstances(AuthenticatorConfig config)
 {
     var signData = new ConsoleSignData(config.Signer.Path);
 
-    return Result.Success(config.TokenProviders.Select(CreateAdapterInstance).ToImmutableArray());
+    return Result.Combine(config.TokenProviders.Select(CreateAdapterInstance));
 
-    IOmsTokenAdapter CreateAdapterInstance(TokenProviderConfig tokenProviderConfig) =>
+    Result<IOmsTokenAdapter> CreateAdapterInstance(TokenProviderConfig tokenProviderConfig) =>
         tokenProviderConfig.AdapterName switch
         {
-            GisAdapterV3.AdapterName => (IOmsTokenAdapter)new GisAdapterV3(tokenProviderConfig, httpClientFactory, systemTime, signData),
-            _ => throw new NotSupportedException($"Adapter '{tokenProviderConfig.AdapterName}' is not supported."),
+            GisAdapterV3.AdapterName => Result.Success(GetGisAdapterV3(tokenProviderConfig)),
+            _ => Result.Failure<IOmsTokenAdapter>($"Adapter '{tokenProviderConfig.AdapterName}' is not supported."),
         };
+
+    IOmsTokenAdapter GetGisAdapterV3(TokenProviderConfig tokenProviderConfig) =>
+        new GisAdapterV3(tokenProviderConfig, httpClientFactory, systemTime, signData);
 }
 
 // Make the implicit Program class public so test projects can access it
