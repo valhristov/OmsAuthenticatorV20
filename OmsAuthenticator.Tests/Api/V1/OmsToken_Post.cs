@@ -1,46 +1,44 @@
 ﻿using System.Diagnostics;
-using System.Net;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
-using OmsAuthenticator.Api.V1;
-using RichardSzalay.MockHttp;
-using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace OmsAuthenticator.Tests.Api.V1
 {
     [TestClass]
     public class OmsToken_Post
     {
-        private readonly MockHttpMessageHandler _httpClientMock;
-        private readonly OmsAuthenticatorApp _app;
-        private readonly HttpClient _client;
+        private static readonly TimeSpan Expiration = TimeSpan.FromHours(10);
+
+        public OmsAuthenticatorApp App { get; }
+        public HttpClient Client { get; }
 
         public OmsToken_Post()
         {
-            _httpClientMock = new MockHttpMessageHandler();
-
-            _app = new OmsAuthenticatorApp(() => _httpClientMock.ToHttpClient());
-            _client = _app.CreateClient();
+            App = new OmsAuthenticatorApp($@"{{
+  ""Authenticator"": {{
+    ""SignDataPath"": "".\\SignData.exe"",
+    ""TokenProviders"": {{
+      ""key1"": {{
+        ""Adapter"": ""gis-v3"",
+        ""Certificate"": ""integrationtests"",
+        ""Url"": ""https://demo.crpt.ru"",
+        ""Expiration"": ""{Expiration}""
+      }}
+    }}
+  }}
+}}");
+            Client = App.CreateClient();
         }
 
-        private async Task<HttpResponseMessage> PostAsync(object request) => 
-            await _client.PostAsync("/oms/token", new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json"));
+        private async Task<HttpResponseMessage> PostAsync(object request) =>
+            await Client.PostAsync("/oms/token", new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json"));
 
-        private void SetupGetTokenRequest(string omsConnection, string data, string token)
-        {
-            _httpClientMock
-                .Expect(HttpMethod.Post, $"/api/v3/auth/cert/{omsConnection}")
-                .WithPartialContent(data)
-                .Respond(HttpStatusCode.OK, new StringContent(JsonSerializer.Serialize(new { token = token })));
-        }
+        [DebuggerStepThrough]
+        private string NewDataToSign() => Guid.NewGuid().ToString().Replace("-", "");
 
-        private void SetupGetCertKeyRequest(string data)
-        {
-            _httpClientMock
-                .Expect(HttpMethod.Get, "/api/v3/auth/cert/key")
-                .Respond(HttpStatusCode.OK, new StringContent(JsonSerializer.Serialize(new { uuid = NewGuid(), data = data })));
-        }
+        [DebuggerStepThrough]
+        private void WaitForTokenToExpire() => App.Wait(Expiration.Add(TimeSpan.FromSeconds(1)));
 
         [DataTestMethod]
         [DataRow("/oms/token", "")]
@@ -56,7 +54,7 @@ namespace OmsAuthenticator.Tests.Api.V1
             // Arrange
 
             // Act
-            using var response = await _client.PostAsync(url, new StringContent(body, Encoding.UTF8, "application/json"));
+            using var response = await Client.PostAsync(url, new StringContent(body, Encoding.UTF8, "application/json"));
 
             // Assert
             await ResponseShould.BeBadRequest(response);
@@ -66,15 +64,16 @@ namespace OmsAuthenticator.Tests.Api.V1
         public async Task No_Token_In_Cache()
         {
             var omsConnection = NewGuid();
+            var dataToSign = NewDataToSign();
 
-            SetupGetCertKeyRequest("the data");
-            SetupGetTokenRequest(omsConnection, "the data", "the token 1");
+            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
+            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 1");
 
             var result = await PostAsync(new { omsConnection = omsConnection, omsId = NewGuid(), requestId = NewGuid(), });
 
-            await ResponseShould.BeOkResult(result, "the token 1");
+            await ResponseShould.BeOk(result, "the token 1");
 
-            _httpClientMock.VerifyNoOutstandingExpectation();
+            App.GisMtApi.VerifyNoOutstandingExpectation();
         }
 
         [TestMethod]
@@ -85,20 +84,21 @@ namespace OmsAuthenticator.Tests.Api.V1
             var omsConnection = NewGuid();
             var omsId = NewGuid();
             var requestId = NewGuid();
+            var dataToSign = NewDataToSign();
 
-            SetupGetCertKeyRequest("the data");
-            SetupGetTokenRequest(omsConnection, "the data", "the token");
+            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
+            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token");
 
             var result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, });
-            await ResponseShould.BeOkResult(result, "the token");
+            await ResponseShould.BeOk(result, "the token");
 
             result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, });
-            await ResponseShould.BeOkResult(result, "the token");
+            await ResponseShould.BeOk(result, "the token");
 
             result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, });
-            await ResponseShould.BeOkResult(result, "the token");
+            await ResponseShould.BeOk(result, "the token");
 
-            _httpClientMock.VerifyNoOutstandingExpectation();
+            App.GisMtApi.VerifyNoOutstandingExpectation();
         }
 
         [TestMethod]
@@ -109,23 +109,26 @@ namespace OmsAuthenticator.Tests.Api.V1
             var omsConnection = NewGuid();
             var omsId = NewGuid();
 
-            SetupGetCertKeyRequest("the data 1");
-            SetupGetTokenRequest(omsConnection, "the data 1", "the token 1");
-            SetupGetCertKeyRequest("the data 2");
-            SetupGetTokenRequest(omsConnection, "the data 2", "the token 2");
-            SetupGetCertKeyRequest("the data 3");
-            SetupGetTokenRequest(omsConnection, "the data 3", "the token 3");
+            var dataToSign = NewDataToSign();
+            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
+            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 1");
+            dataToSign = NewDataToSign();
+            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
+            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 2");
+            dataToSign = NewDataToSign();
+            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
+            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 3");
 
             var result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = NewGuid(), });
-            await ResponseShould.BeOkResult(result, "the token 1");
+            await ResponseShould.BeOk(result, "the token 1");
 
             result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = NewGuid(), });
-            await ResponseShould.BeOkResult(result, "the token 2");
+            await ResponseShould.BeOk(result, "the token 2");
 
             result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = NewGuid(), });
-            await ResponseShould.BeOkResult(result, "the token 3");
+            await ResponseShould.BeOk(result, "the token 3");
 
-            _httpClientMock.VerifyNoOutstandingExpectation();
+            App.GisMtApi.VerifyNoOutstandingExpectation();
         }
 
         [TestMethod]
@@ -137,27 +140,30 @@ namespace OmsAuthenticator.Tests.Api.V1
             var omsId = NewGuid();
             var requestId = NewGuid();
 
-            SetupGetCertKeyRequest("the data 1");
-            SetupGetTokenRequest(omsConnection, "the data 1", "the token 1");
-            SetupGetCertKeyRequest("the data 2");
-            SetupGetTokenRequest(omsConnection, "the data 2", "the token 2");
-            SetupGetCertKeyRequest("the data 3");
-            SetupGetTokenRequest(omsConnection, "the data 3", "the token 3");
+            var dataToSign = NewDataToSign();
+            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
+            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 1");
+            dataToSign = NewDataToSign();
+            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
+            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 2");
+            dataToSign = NewDataToSign();
+            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
+            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 3");
 
             var result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, });
-            await ResponseShould.BeOkResult(result, "the token 1");
+            await ResponseShould.BeOk(result, "the token 1");
 
-            _app.Wait(TimeSpan.FromHours(10)); // wait for the token to expire
-
-            result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, });
-            await ResponseShould.BeOkResult(result, "the token 2");
-
-            _app.Wait(TimeSpan.FromHours(10)); // wait for the token to expire
+            WaitForTokenToExpire();
 
             result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, });
-            await ResponseShould.BeOkResult(result, "the token 3");
+            await ResponseShould.BeOk(result, "the token 2");
 
-            _httpClientMock.VerifyNoOutstandingExpectation();
+            WaitForTokenToExpire();
+
+            result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, });
+            await ResponseShould.BeOk(result, "the token 3");
+
+            App.GisMtApi.VerifyNoOutstandingExpectation();
         }
 
         [DebuggerStepThrough]

@@ -17,7 +17,7 @@ namespace OmsAuthenticator.Framework
 
         public static Result<IEnumerable<T>> Combine<T>(IEnumerable<Result<T>> results)
         {
-            var lookup = results.ToLookup(x => x.IsFailure);
+            var lookup = results.ToLookup(x => x is Result<T>.Failure);
             return lookup[true].Any() // failures
                 ? Failure<IEnumerable<T>>(lookup[true].OfType<Result<T>.Failure>().SelectMany(x => x.Errors).ToImmutableArray())
                 : Success<IEnumerable<T>>(lookup[false].OfType<Result<T>.Success>().Select(x => x.Value).ToImmutableArray());
@@ -39,8 +39,6 @@ namespace OmsAuthenticator.Framework
 
     public class Result<T>
     {
-        public bool IsFailure => this is Failure;
-
         [DebuggerStepThrough]
         public TOut Select<TOut>(Func<T, TOut> onSuccess, Func<ImmutableArray<string>, TOut> onFailure) =>
             this switch
@@ -51,19 +49,19 @@ namespace OmsAuthenticator.Framework
             };
 
         [DebuggerStepThrough]
-        public Result<TOut> Convert<TOut>(Func<T, Result<TOut>> convert) =>
+        public Result<TOut> Convert<TOut>(Func<T, Result<TOut>> onSuccess) =>
             this switch
             {
-                Success success => convert(success.Value),
+                Success success => onSuccess(success.Value),
                 Failure failure => Result.Failure<TOut>(failure.Errors),
                 _ => throw new NotImplementedException(),
             };
 
         [DebuggerStepThrough]
-        public async Task<Result<TOut>> ConvertAsync<TOut>(Func<T, Task<Result<TOut>>> convertAsync) =>
+        public async Task<Result<TOut>> ConvertAsync<TOut>(Func<T, Task<Result<TOut>>> onSuccessAsync) =>
             this switch
             {
-                Success success => await convertAsync(success.Value),
+                Success success => await onSuccessAsync(success.Value),
                 Failure failure => Result.Failure<TOut>(failure.Errors),
                 _ => throw new NotImplementedException(),
             };

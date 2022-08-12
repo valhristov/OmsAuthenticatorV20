@@ -1,18 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using OmsAuthenticator.ApiAdapters;
-using OmsAuthenticator.Framework;
 
 namespace OmsAuthenticator.Api.V1
 {
-    public class TokenController
+    public class TokenControllerV1
     {
-        private readonly TokenCache _cache;
-        private readonly IOmsTokenAdapter _tokenAdapter;
+        private readonly TokenProvider _tokenProvider;
 
-        public TokenController(TokenCache cache, IOmsTokenAdapter tokenAdapter)
+        public TokenControllerV1(TokenProvider tokenProvider)
         {
-            _cache = cache;
-            _tokenAdapter = tokenAdapter;
+            _tokenProvider = tokenProvider;
         }
 
         public async Task<IResult> GetAsync([FromQuery]string? omsId, [FromQuery]string? registrationKey)
@@ -44,12 +40,10 @@ namespace OmsAuthenticator.Api.V1
                 return Results.BadRequest(new TokenResponse(new[] { $"omsId body parameter is required." }));
             }
 
-            var tokenKey = new TokenKey.Oms(request.OmsId, request.OmsConnection, request.RequestId ?? Guid.NewGuid().ToString());
-
-            var tokenResult = await _cache.AddOrUpdate(tokenKey, async _ => await _tokenAdapter.GetOmsTokenAsync(tokenKey));
+            var tokenResult = await _tokenProvider.GetOmsTokenAsync(new TokenKey.Oms(request.OmsId, request.OmsConnection, request.RequestId));
 
             return tokenResult.Select(
-                token => Results.Ok(new TokenResponse(token.Value, tokenKey.RequestId, token.Expires)),
+                token => Results.Ok(new TokenResponse(token.Value, token.RequestId, token.Expires)),
                 errors => Results.UnprocessableEntity(new TokenResponse(errors)));
         }
     }

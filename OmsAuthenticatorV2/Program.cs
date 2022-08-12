@@ -1,4 +1,6 @@
 using System.Collections.Immutable;
+using OmsAuthenticator;
+using OmsAuthenticator.Api.V1;
 using OmsAuthenticator.Api.V2;
 using OmsAuthenticator.ApiAdapters;
 using OmsAuthenticator.ApiAdapters.GISMT.V3;
@@ -42,10 +44,25 @@ void StartApplication(IEnumerable<IOmsTokenAdapter> adapters)
 {
     foreach (var adapter in adapters)
     {
-        var controller = new TokenControllerV2(cache, adapter);
-        app.MapGet($"/api/v2/{adapter.PathSegment}/oms/token/", controller.GetOmsTokenAsync);
-        app.MapGet($"/api/v2/{adapter.PathSegment}/true/token/", controller.GetTrueTokenAsync);
+        var provider = new TokenProvider(cache, adapter);
+
+        var controllerV1 = new TokenControllerV1(provider);
+        // OMS token, semi-backward compatibility. Applications can use this API with configuration change.
+        app.MapGet($"/api/v1/{adapter.PathSegment}/oms/token/", controllerV1.GetAsync);
+        app.MapPost($"/api/v1/{adapter.PathSegment}/oms/token/", controllerV1.PostAsync);
+
+        var controllerV2 = new TokenControllerV2(provider);
+        // OMS token. New version of API. Applications need new client to use this API.
+        app.MapGet($"/api/v2/{adapter.PathSegment}/oms/token/", controllerV2.GetOmsTokenAsync);
+        // TRUE API token. New API.
+        app.MapGet($"/api/v2/{adapter.PathSegment}/true/token/", controllerV2.GetTrueTokenAsync);
     }
+
+    // Backward compatibility. Applications can use this API without any changes.
+    var controller = new TokenControllerV1(new TokenProvider(cache, adapters.First()));
+    app.MapGet($"/oms/token/", controller.GetAsync);
+    app.MapPost($"/oms/token/", controller.PostAsync);
+    // TODO: add DTABAC adapter and controller here
 
     app.Run();
 }

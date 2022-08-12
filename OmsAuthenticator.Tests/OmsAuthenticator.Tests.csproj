@@ -35,4 +35,10 @@
     <None Remove="Api\V1\**" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="Api\V1\OmsToken_Get.cs" />
+    <Compile Include="Api\V1\OmsToken_Post.cs" />
+    <Compile Include="Api\V1\ResponseShould.cs" />
+  </ItemGroup>
+
 </Project>

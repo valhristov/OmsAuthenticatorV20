@@ -6,13 +6,27 @@ namespace OmsAuthenticator.Tests.Api.V1
     [TestClass]
     public class OmsToken_Get
     {
-        private readonly OmsAuthenticatorApp _app;
-        private readonly HttpClient _client;
+        private static readonly TimeSpan Expiration = TimeSpan.FromHours(10);
+
+        public OmsAuthenticatorApp App { get; }
+        public HttpClient Client { get; }
 
         public OmsToken_Get()
         {
-            _app = new OmsAuthenticatorApp(() => default!);
-            _client = _app.CreateClient();
+            App = new OmsAuthenticatorApp($@"{{
+  ""Authenticator"": {{
+    ""SignDataPath"": "".\\SignData.exe"",
+    ""TokenProviders"": {{
+      ""key1"": {{
+        ""Adapter"": ""gis-v3"",
+        ""Certificate"": ""integrationtests"",
+        ""Url"": ""https://demo.crpt.ru"",
+        ""Expiration"": ""{Expiration}""
+      }}
+    }}
+  }}
+}}");
+            Client = App.CreateClient();
         }
 
         [DataTestMethod]
@@ -25,11 +39,10 @@ namespace OmsAuthenticator.Tests.Api.V1
             // Arrange
 
             // Act
-            using var response = await _client.GetAsync(url);
+            using var response = await Client.GetAsync(url);
 
             // Assert
             await ResponseShould.BeBadRequest(response);
         }
-
     }
 }
