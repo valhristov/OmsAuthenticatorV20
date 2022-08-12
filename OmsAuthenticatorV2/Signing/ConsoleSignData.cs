@@ -14,18 +14,13 @@ namespace OmsAuthenticator.Signing
 
         public async Task<Result<string>> SignAsync(string data, string certificateSerialNumber)
         {
-            if (_pathToSignerExe == "integration tests")
-            {
-                return Result.Success(data);
-            }
-
-            var tempFile = default(string);
+            var tempFilePath = default(string);
             try
             {
                 if (data.Length > 1000)
                 {
-                    tempFile = Path.GetTempFileName();
-                    File.WriteAllText(tempFile, data);
+                    tempFilePath = Path.GetTempFileName();
+                    File.WriteAllText(tempFilePath, data);
 
                     //_logger.LogInformation($"Wrote data in {tempFile}");
                 }
@@ -36,7 +31,7 @@ namespace OmsAuthenticator.Signing
 
                 var signer = new Process();
                 signer.StartInfo.FileName = _pathToSignerExe;
-                signer.StartInfo.Arguments = $"{certificateSerialNumber} {tempFile ?? data}"; // Pass either the path to the temp file, or the data itself
+                signer.StartInfo.Arguments = $"{certificateSerialNumber} {tempFilePath ?? data}"; // Pass either the path to the temp file, or the data itself
                 signer.StartInfo.UseShellExecute = false;
                 signer.StartInfo.RedirectStandardOutput = true;
                 signer.Start();
@@ -55,9 +50,9 @@ namespace OmsAuthenticator.Signing
             }
             finally
             {
-                if (tempFile != default && File.Exists(tempFile))
+                if (tempFilePath != default && File.Exists(tempFilePath))
                 {
-                    File.Delete(tempFile);
+                    File.Delete(tempFilePath);
                 }
             }
         }

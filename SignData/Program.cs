@@ -35,8 +35,18 @@ namespace SignData
                     }
                 }
 
-                var certificate = GetSignerCertificate(serialNumber);
-                Console.Write(Sign(value, certificate));
+                if (serialNumber == "integrationtests")
+                {
+                    // This is for integration/unit test purposes, we just return
+                    // the same value to avoid having the certificate installed.
+                    Console.Write(value);
+                }
+                else
+                {
+                    var certificate = GetSignerCertificate(serialNumber);
+                    Console.Write(Sign(value, certificate));
+                }
+
                 return 0; // OK
             }
             catch (Exception e)

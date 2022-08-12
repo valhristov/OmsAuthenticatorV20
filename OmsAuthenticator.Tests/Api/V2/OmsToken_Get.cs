@@ -15,11 +15,11 @@ namespace OmsAuthenticator.Tests.Api.V2
             // Using "integration tests" for SignDataPath to short-cirquit the signer
             App = new OmsAuthenticatorApp($@"{{
   ""Authenticator"": {{
-    ""SignDataPath"": ""integration tests"",
+    ""SignDataPath"": "".\\SignData.exe"",
     ""TokenProviders"": {{
       ""key1"": {{
         ""Adapter"": ""gis-v3"",
-        ""Certificate"": ""111"",
+        ""Certificate"": ""integrationtests"",
         ""Url"": ""https://demo.crpt.ru"",
         ""Expiration"": ""{Expiration}""
       }}
@@ -30,6 +30,7 @@ namespace OmsAuthenticator.Tests.Api.V2
         }
 
         private string NewGuid() => Guid.NewGuid().ToString();
+        private string NewDataToSign() => Guid.NewGuid().ToString().Replace("-", "");
 
         private void WaitForTokenToExpire() =>
             App.Wait(Expiration.Add(TimeSpan.FromSeconds(1)));
@@ -57,9 +58,10 @@ namespace OmsAuthenticator.Tests.Api.V2
         public async Task No_Token_In_Cache(string requestIdParameter)
         {
             var omsConnection = NewGuid();
+            var dataToSign = NewDataToSign();
 
-            App.GisMtApi.SetupGetCertKeyRequest("the data");
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, "the data", "the token");
+            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
+            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token");
 
             var result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={NewGuid()}&connectionid={omsConnection}{requestIdParameter}");
 
@@ -76,9 +78,10 @@ namespace OmsAuthenticator.Tests.Api.V2
             var omsConnection = NewGuid();
             var omsId = NewGuid();
             var requestId = NewGuid();
+            var dataToSign = NewDataToSign();
 
-            App.GisMtApi.SetupGetCertKeyRequest("the data");
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, "the data", "the token");
+            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
+            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token");
 
             var result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
             await ResponseShould.BeOkResult(result, "the token", requestId);
@@ -100,12 +103,15 @@ namespace OmsAuthenticator.Tests.Api.V2
             var omsConnection = NewGuid();
             var omsId = NewGuid();
 
-            App.GisMtApi.SetupGetCertKeyRequest("the data 1");
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, "the data 1", "the token 1");
-            App.GisMtApi.SetupGetCertKeyRequest("the data 2");
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, "the data 2", "the token 2");
-            App.GisMtApi.SetupGetCertKeyRequest("the data 3");
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, "the data 3", "the token 3");
+            var dataToSign = NewDataToSign();
+            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
+            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 1");
+            dataToSign = NewDataToSign();
+            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
+            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 2");
+            dataToSign = NewDataToSign();
+            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
+            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 3");
 
             var requestId = NewGuid();
             var result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
@@ -131,12 +137,15 @@ namespace OmsAuthenticator.Tests.Api.V2
             var omsId = NewGuid();
             var requestId = NewGuid();
 
-            App.GisMtApi.SetupGetCertKeyRequest("the data 1");
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, "the data 1", "the token 1");
-            App.GisMtApi.SetupGetCertKeyRequest("the data 2");
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, "the data 2", "the token 2");
-            App.GisMtApi.SetupGetCertKeyRequest("the data 3");
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, "the data 3", "the token 3");
+            var dataToSign = NewDataToSign();
+            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
+            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 1");
+            dataToSign = NewDataToSign();
+            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
+            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 2");
+            dataToSign = NewDataToSign();
+            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
+            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 3");
 
             var result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
             await ResponseShould.BeOkResult(result, "the token 1", requestId);
@@ -161,9 +170,10 @@ namespace OmsAuthenticator.Tests.Api.V2
             var omsConnection = NewGuid();
             var omsId = NewGuid();
             var requestId = NewGuid();
+            var dataToSign = NewDataToSign();
 
-            App.GisMtApi.SetupGetCertKeyRequest("the data");
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, "the data", "the token");
+            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
+            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token");
 
             var result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
             await ResponseShould.BeOkResult(result, "the token", requestId);
