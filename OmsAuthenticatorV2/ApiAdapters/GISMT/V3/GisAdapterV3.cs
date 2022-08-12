@@ -24,7 +24,7 @@ namespace OmsAuthenticator.ApiAdapters.GISMT.V3
             _signData = signData;
         }
 
-        private record AuthData(string Uuid, string Data);
+        public string PathSegment => _config.PathSegment;
 
         public async Task<Result<Token>> GetOmsTokenAsync(TokenKey tokenKey)
         {
@@ -89,6 +89,8 @@ namespace OmsAuthenticator.ApiAdapters.GISMT.V3
 
         private DateTimeOffset GetExpiration() =>
             _systemTime.UtcNow.Add(_config.Expiration);
+
+        private record AuthData(string Uuid, string Data);
 
         private class AuthTokenResponse
         {

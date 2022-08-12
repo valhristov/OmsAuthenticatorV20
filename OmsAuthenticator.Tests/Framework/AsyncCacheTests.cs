@@ -9,14 +9,14 @@ namespace OmsAuthenticator.Tests.Framework
     public class AsyncCacheTests
     {
         private SystemTimeMock SystemTimeMock { get; }
-        private AsyncTokenResultCache Cache { get; }
+        private TokenCache Cache { get; }
 
         private static readonly TimeSpan Expiration = TimeSpan.FromHours(1);
         
         public AsyncCacheTests()
         {
             SystemTimeMock = new SystemTimeMock();
-            Cache = new AsyncTokenResultCache(() => SystemTimeMock.UtcNow);
+            Cache = new TokenCache(SystemTimeMock);
         }
 
         [TestMethod]

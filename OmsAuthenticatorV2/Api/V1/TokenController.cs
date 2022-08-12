@@ -6,10 +6,10 @@ namespace OmsAuthenticator.Api.V1
 {
     public class TokenController
     {
-        private readonly AsyncTokenResultCache _cache;
+        private readonly TokenCache _cache;
         private readonly IOmsTokenAdapter _tokenAdapter;
 
-        public TokenController(AsyncTokenResultCache cache, IOmsTokenAdapter tokenAdapter)
+        public TokenController(TokenCache cache, IOmsTokenAdapter tokenAdapter)
         {
             _cache = cache;
             _tokenAdapter = tokenAdapter;

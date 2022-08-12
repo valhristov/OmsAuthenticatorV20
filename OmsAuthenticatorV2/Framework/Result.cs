@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using OmsAuthenticator.ApiAdapters;
 
 namespace OmsAuthenticator.Framework
 {
@@ -66,6 +67,17 @@ namespace OmsAuthenticator.Framework
                 Failure failure => Result.Failure<TOut>(failure.Errors),
                 _ => throw new NotImplementedException(),
             };
+
+        [DebuggerStepThrough]
+        public void Match(Action<T> onSuccess, Action<ImmutableArray<string>> onFailure)
+        {
+            switch (this)
+            {
+                case Success success: onSuccess(success.Value); break;
+                case Failure failure: onFailure(failure.Errors); break;
+                default: throw new NotImplementedException();
+            };
+        }
 
         public sealed class Success : Result<T>
         {

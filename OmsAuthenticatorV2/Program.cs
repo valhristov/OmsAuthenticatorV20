@@ -30,40 +30,45 @@ var systemTime = app.Services.GetRequiredService<ISystemTime>();
 var httpClientFactory = app.Services.GetRequiredService<IHttpClientFactory>();
 var configuration = app.Services.GetRequiredService<IConfiguration>();
 
-var cache = new AsyncTokenResultCache(() => systemTime.UtcNow);
+var cache = new TokenCache(systemTime);
 
-var messages = AuthenticatorConfig.Create(configuration)
+AuthenticatorConfig.Create(configuration)
     .Convert(GetAdapterInstances)
-    .Select(StartApplication, errors => errors);
+    .Match(
+        onSuccess: StartApplication,
+        onFailure: PrintMessages);
 
-foreach (var message in messages)
-{
-    Console.WriteLine(message);
-}
-
-Result<ImmutableArray<(TokenProviderConfig, IOmsTokenAdapter)>> GetAdapterInstances(AuthenticatorConfig config) =>
-    Result.Success(config.TokenProviders.Select(x =>
-    {
-        var adapter = x.Adapter switch
-        {
-            GisAdapterV3.AdapterName => new GisAdapterV3(x, httpClientFactory, systemTime, new ConsoleSignData(config.Signer.Path)),
-            _ => throw new NotSupportedException(""),
-        };
-        return (x, (IOmsTokenAdapter)adapter);
-    }).ToImmutableArray());
-
-ImmutableArray<string> StartApplication(ImmutableArray<(TokenProviderConfig Config, IOmsTokenAdapter Instance)> adapters)
+void StartApplication(ImmutableArray<IOmsTokenAdapter> adapters)
 {
     foreach (var adapter in adapters)
     {
-        app.MapGet($"/api/v2/{adapter.Config.Key}/oms/token/", new TokenControllerV2(cache, adapter.Instance).GetOmsTokenAsync);
+        app.MapGet($"/api/v2/{adapter.PathSegment}/oms/token/", new TokenControllerV2(cache, adapter).GetOmsTokenAsync);
     }
 
     app.Run();
-
-    return ImmutableArray.Create("Successfully stopped the application.");
 }
 
+void PrintMessages(ImmutableArray<string> errors)
+{
+    foreach (var message in errors)
+    {
+        Console.WriteLine(message);
+    }
+}
+
+Result<ImmutableArray<IOmsTokenAdapter>> GetAdapterInstances(AuthenticatorConfig config)
+{
+    var signData = new ConsoleSignData(config.Signer.Path);
+
+    return Result.Success(config.TokenProviders.Select(CreateAdapterInstance).ToImmutableArray());
+
+    IOmsTokenAdapter CreateAdapterInstance(TokenProviderConfig tokenProviderConfig) =>
+        tokenProviderConfig.AdapterName switch
+        {
+            GisAdapterV3.AdapterName => (IOmsTokenAdapter)new GisAdapterV3(tokenProviderConfig, httpClientFactory, systemTime, signData),
+            _ => throw new NotSupportedException($"Adapter '{tokenProviderConfig.AdapterName}' is not supported."),
+        };
+}
 
 // Make the implicit Program class public so test projects can access it
 public partial class Program { }

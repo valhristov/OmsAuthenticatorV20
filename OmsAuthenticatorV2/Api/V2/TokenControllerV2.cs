@@ -1,16 +1,15 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using OmsAuthenticator.ApiAdapters;
-using OmsAuthenticator.ApiAdapters.GISMT.V3;
 using OmsAuthenticator.Framework;
 
 namespace OmsAuthenticator.Api.V2;
 
 public class TokenControllerV2
 {
-    private readonly AsyncTokenResultCache _cache;
+    private readonly TokenCache _cache;
     private readonly IOmsTokenAdapter _omsTokenAdapter;
 
-    public TokenControllerV2(AsyncTokenResultCache cache, IOmsTokenAdapter omsTokenAdapter)
+    public TokenControllerV2(TokenCache cache, IOmsTokenAdapter omsTokenAdapter)
     {
         _cache = cache;
         _omsTokenAdapter = omsTokenAdapter;

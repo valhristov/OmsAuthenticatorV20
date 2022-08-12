@@ -4,7 +4,7 @@ using OmsAuthenticator.Framework;
 
 namespace OmsAuthenticator.Configuration;
 
-public record TokenProviderConfig(string Key, string Adapter, string Url, string Certificate, TimeSpan Expiration)
+public record TokenProviderConfig(string PathSegment, string AdapterName, string Url, string Certificate, TimeSpan Expiration)
 {
     public static Result<ImmutableArray<TokenProviderConfig>> CreateMany(IConfigurationSection parent) =>
         parent.GetRequiredSection("TokenProviders")
