@@ -6,14 +6,14 @@ using OmsAuthenticator.Framework;
 namespace OmsAuthenticator.Tests.Framework
 {
     [TestClass]
-    public class AsyncCacheTests
+    public class TokenCacheTests
     {
         private SystemTimeMock SystemTimeMock { get; }
         private TokenCache Cache { get; }
 
         private static readonly TimeSpan Expiration = TimeSpan.FromHours(1);
         
-        public AsyncCacheTests()
+        public TokenCacheTests()
         {
             SystemTimeMock = new SystemTimeMock();
             Cache = new TokenCache(SystemTimeMock);

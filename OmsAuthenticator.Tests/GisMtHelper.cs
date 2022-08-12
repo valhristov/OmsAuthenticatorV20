@@ -32,5 +32,8 @@ namespace OmsAuthenticator.Tests
             _httpClientMock
                 .Expect(HttpMethod.Get, "/api/v3/auth/cert/key")
                 .Respond(statusCode, new StringContent(responseContent));
+
+        internal void VerifyNoOutstandingExpectation() =>
+            _httpClientMock.VerifyNoOutstandingExpectation();
     }
 }

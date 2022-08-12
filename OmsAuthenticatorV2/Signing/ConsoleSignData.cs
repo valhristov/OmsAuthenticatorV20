@@ -42,7 +42,7 @@ namespace OmsAuthenticator.Signing
 
                 return signer.ExitCode == 0
                     ? Result.Success(output)
-                    : Result.Failure<string>(output);
+                    : Result.Failure<string>($"[{Path.GetFileName(_pathToSignerExe)}] {output}");
             }
             catch (Exception e)
             {

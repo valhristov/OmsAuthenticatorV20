@@ -1,7 +1,4 @@
-﻿using System;
-using System.Net.Http;
-using System.Text.Json;
-using System.Threading.Tasks;
+﻿using System.Text.Json;
 
 namespace OmsAuthenticator.Framework
 {
@@ -17,23 +14,23 @@ namespace OmsAuthenticator.Framework
 
                 if (!httpResponse.IsSuccessStatusCode)
                 {
-                    return Result.Failure<T>($"StatusCode: {httpResponse.StatusCode}. Response content: '{content}'");
+                    return Result.Failure<T>(FormatMessage(httpResponse, $"Response was {(int)httpResponse.StatusCode} with content '{content}'"));
                 }
 
                 if (string.IsNullOrEmpty(content))
                 {
-                    return Result.Failure<T>($"Status code: {httpResponse.StatusCode}. Response content is empty");
+                    return Result.Failure<T>(FormatMessage(httpResponse, $"Response was {(int)httpResponse.StatusCode} but empty."));
                 }
 
                 try
                 {
                     return JsonSerializer.Deserialize<T>(content) is T result
                         ? Result.Success(result)
-                        : Result.Failure<T>($"Deserialized <null> from '{content}'");
+                        : Result.Failure<T>(FormatMessage(httpResponse, $"Deserialized <null> from '{content}'"));
                 }
                 catch (JsonException je)
                 {
-                    return Result.Failure<T>($"Error deserializing '{content}': {je.Message}");
+                    return Result.Failure<T>(FormatMessage(httpResponse, $"Cannot deserialize response. Error: '{je.Message}' Content '{content}'"));
                 }
             }
             catch (Exception e)
@@ -41,5 +38,8 @@ namespace OmsAuthenticator.Framework
                 return Result.Failure<T>(e.Message);
             }
         }
+
+        static string FormatMessage(HttpResponseMessage httpResponse, string message) =>
+            $"[{httpResponse.RequestMessage?.Method} {httpResponse.RequestMessage?.RequestUri}] {message}";
     }
 }

@@ -18,11 +18,11 @@ namespace OmsAuthenticator.Tests.Api.V2
             tokenResponse.Errors.Should().NotBeEmpty();
         }
 
-        public static async Task BeOkResult(HttpResponseMessage response, string expectedToken, string? expectedRequestId = null)
+        public static async Task BeOk(HttpResponseMessage response, string expectedToken, string? expectedRequestId = null)
         {
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
-
             var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(await response.Content.ReadAsStringAsync())!;
+
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
 
             tokenResponse.Should().NotBeNull();
             tokenResponse.Token.Should().Be(expectedToken);
@@ -31,6 +31,18 @@ namespace OmsAuthenticator.Tests.Api.V2
                 tokenResponse.RequestId.Should().Be(expectedRequestId);
             }
             tokenResponse.Errors.Should().BeNull();
+        }
+
+        public static async Task BeUnprocessableEntity(HttpResponseMessage response, string expectedError)
+        {
+            var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(await response.Content.ReadAsStringAsync())!;
+
+            response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+            tokenResponse.Should().NotBeNull();
+            tokenResponse.Token.Should().BeNull();
+            tokenResponse.Errors.Should().NotBeNullOrEmpty();
+            tokenResponse.Errors.Should().Contain(expectedError);
         }
     }
 }

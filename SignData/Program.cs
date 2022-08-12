@@ -24,21 +24,14 @@ namespace SignData
             {
                 if (File.Exists(value))
                 {
-                    try
-                    {
-                        value = File.ReadAllText(value);
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine(e);
-                        return 1;
-                    }
+                    value = File.ReadAllText(value);
                 }
 
                 if (serialNumber == "integrationtests")
                 {
-                    // This is for integration/unit test purposes, we just return
-                    // the same value to avoid having the certificate installed.
+                    // This is for integration/unit test purposes. We just return the
+                    // same value to avoid having the CRPT certificate installed because
+                    // it requires additional licensed software.
                     Console.Write(value);
                 }
                 else
@@ -51,7 +44,7 @@ namespace SignData
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Console.WriteLine(e.Message);
                 return 1;
             }
         }
