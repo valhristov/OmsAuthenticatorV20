@@ -16,11 +16,11 @@ namespace OmsAuthenticator.Api.V1
         {
             if (request == null)
             {
-                return Results.BadRequest(new TokenResponse(new[] { $"Invalid request." }));
+                return Results.BadRequest(new SignatureResponseV1(new[] { $"Invalid request." }));
             }
             if (request.PayloadBase64 == null)
             {
-                return Results.BadRequest(new TokenResponse(new[] { $"payloadBase64 body parameter is required." }));
+                return Results.BadRequest(new SignatureResponseV1(new[] { $"payloadBase64 body parameter is required." }));
             }
 
             var result = await _adapter.SignAsync(request.PayloadBase64);

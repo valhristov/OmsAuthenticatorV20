@@ -22,7 +22,7 @@ namespace OmsAuthenticator.Tests.Framework
         [TestMethod]
         public async Task Success_Result_Expires_After_Configured_Time()
         {
-            var tokenKey = new TokenKey.Oms("a", "a", "a");
+            var tokenKey = new TokenKey.Oms("a", "a", "a", "a");
 
             var result1 = await Cache.AddOrUpdate(tokenKey, NextSuccess);
             result1.GetValue().Value.Should().Be("1"); // cache miss
@@ -38,7 +38,7 @@ namespace OmsAuthenticator.Tests.Framework
         [TestMethod]
         public async Task Success_Result_Is_Persisted_In_Cache()
         {
-            var tokenKey = new TokenKey.Oms("a", "a", "a");
+            var tokenKey = new TokenKey.Oms("a", "a", "a", "a");
 
             var result1 = await Cache.AddOrUpdate(tokenKey, NextSuccess);
             result1.GetValue().Value.Should().Be("1"); // cache miss
@@ -51,7 +51,7 @@ namespace OmsAuthenticator.Tests.Framework
         [TestMethod]
         public async Task Failure_Result_Is_Not_Persisted_In_Cache()
         {
-            var tokenKey = new TokenKey.Oms("a", "a", "a");
+            var tokenKey = new TokenKey.Oms("a", "a", "a", "a");
             var result1 = await Cache.AddOrUpdate(tokenKey, NextFailure);
             result1.GetErrors().Should().BeEquivalentTo(new[] { "1" }); // cache miss
             var result2 = await Cache.AddOrUpdate(tokenKey, NextFailure);
@@ -63,12 +63,12 @@ namespace OmsAuthenticator.Tests.Framework
         [TestMethod]
         public async Task Clear_Removes_Stale_Items()
         {
-            await Cache.AddOrUpdate(new TokenKey.Oms("a", "a", "a"), NextSuccess); // this should get cleared in the end
+            await Cache.AddOrUpdate(new TokenKey.Oms("a", "a", "a", "a"), NextSuccess); // this should get cleared in the end
             Cache.Count.Should().Be(1);
 
             SystemTimeMock.Wait(Expiration / 2);
 
-            await Cache.AddOrUpdate(new TokenKey.Oms("b", "b", "b"), NextSuccess); // this should stay in cache in the end
+            await Cache.AddOrUpdate(new TokenKey.Oms("b", "b", "b", "b"), NextSuccess); // this should stay in cache in the end
             Cache.Count.Should().Be(2);
 
             SystemTimeMock.Wait(Expiration);
@@ -81,13 +81,13 @@ namespace OmsAuthenticator.Tests.Framework
         [TestMethod]
         public async Task Tokens_Of_Different_Type_Are_Not_Mixed()
         {
-            var result1 = await Cache.AddOrUpdate(new TokenKey.Oms("a", "a", "a"), NextSuccess);
+            var result1 = await Cache.AddOrUpdate(new TokenKey.Oms("a", "a", "a", "a"), NextSuccess);
             result1.GetValue().Value.Should().Be("1");
 
             var result2 = await Cache.AddOrUpdate(new TokenKey.TrueApi("a"), NextSuccess);
             result2.GetValue().Value.Should().Be("2");
 
-            var result3 = await Cache.AddOrUpdate(new TokenKey.Oms("a", "a", "a"), NextSuccess);
+            var result3 = await Cache.AddOrUpdate(new TokenKey.Oms("a", "a", "a", "a"), NextSuccess);
             result3.GetValue().Value.Should().Be("1");
 
             var result4 = await Cache.AddOrUpdate(new TokenKey.TrueApi("a"), NextSuccess);
@@ -97,7 +97,7 @@ namespace OmsAuthenticator.Tests.Framework
         [TestMethod]
         public async Task Concurrent_Access()
         {
-            var tokenKey = new TokenKey.Oms("oms-id", "connection-id", "request-id");
+            var tokenKey = new TokenKey.Oms("application-id", "oms-id", "connection-id", "request-id");
 
             // Run 5 concurent tasks to get the same item from the cache; all calls should receive the same value
             Task.WaitAll(

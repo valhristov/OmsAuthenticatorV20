@@ -26,7 +26,7 @@ public class TokenControllerV2
             return Results.BadRequest(new TokenResponseV2(new[] { $"Query string parameter '{nameof(connectionId)}' is required." }));
         }
 
-        var tokenResult = await _tokenProvider.GetOmsTokenAsync(new TokenKey.Oms(omsId, connectionId, requestId));
+        var tokenResult = await _tokenProvider.GetOrAddOmsTokenAsync(new TokenKey.Oms(string.Empty, omsId, connectionId, requestId));
 
         return tokenResult.Select(
             token => Results.Ok(new TokenResponseV2(token.Value, token.RequestId, token.Expires)),

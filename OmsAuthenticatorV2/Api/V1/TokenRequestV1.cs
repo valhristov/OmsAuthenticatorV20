@@ -2,7 +2,7 @@
 
 namespace OmsAuthenticator.Api.V1
 {
-    public class TokenRequest
+    public class TokenRequestV1
     {
         [JsonPropertyName("omsId")]
         public string? OmsId { get; set; }

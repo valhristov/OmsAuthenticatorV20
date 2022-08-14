@@ -69,7 +69,7 @@ namespace OmsAuthenticator.Tests.Api.V1
             App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
             App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 1");
 
-            var result = await PostAsync(new { omsConnection = omsConnection, omsId = NewGuid(), requestId = NewGuid(), });
+            var result = await PostAsync(new { omsConnection = omsConnection, omsId = NewGuid(), requestId = NewGuid(), registrationKey = "inextor", });
 
             await ResponseShould.BeOk(result, "the token 1");
 
@@ -89,13 +89,13 @@ namespace OmsAuthenticator.Tests.Api.V1
             App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
             App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token");
 
-            var result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, });
+            var result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, registrationKey = "inextor", });
             await ResponseShould.BeOk(result, "the token");
 
-            result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, });
+            result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, registrationKey = "inextor", });
             await ResponseShould.BeOk(result, "the token");
 
-            result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, });
+            result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, registrationKey = "inextor", });
             await ResponseShould.BeOk(result, "the token");
 
             App.GisMtApi.VerifyNoOutstandingExpectation();
@@ -119,13 +119,13 @@ namespace OmsAuthenticator.Tests.Api.V1
             App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
             App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 3");
 
-            var result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = NewGuid(), });
+            var result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = NewGuid(), registrationKey = "inextor", });
             await ResponseShould.BeOk(result, "the token 1");
 
-            result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = NewGuid(), });
+            result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = NewGuid(), registrationKey = "inextor", });
             await ResponseShould.BeOk(result, "the token 2");
 
-            result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = NewGuid(), });
+            result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = NewGuid(), registrationKey = "inextor", });
             await ResponseShould.BeOk(result, "the token 3");
 
             App.GisMtApi.VerifyNoOutstandingExpectation();
@@ -150,17 +150,17 @@ namespace OmsAuthenticator.Tests.Api.V1
             App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
             App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 3");
 
-            var result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, });
+            var result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, registrationKey = "inextor", });
             await ResponseShould.BeOk(result, "the token 1");
 
             WaitForTokenToExpire();
 
-            result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, });
+            result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, registrationKey = "inextor", });
             await ResponseShould.BeOk(result, "the token 2");
 
             WaitForTokenToExpire();
 
-            result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, });
+            result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, registrationKey = "inextor", });
             await ResponseShould.BeOk(result, "the token 3");
 
             App.GisMtApi.VerifyNoOutstandingExpectation();

@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
+using FluentAssertions;
 using RichardSzalay.MockHttp;
 
 namespace OmsAuthenticator.Tests
@@ -22,11 +23,14 @@ namespace OmsAuthenticator.Tests
         /// <param name="data">Provide the original data that was sent for signing.</param>
         /// <param name="statusCode"></param>
         /// <param name="responseContent"></param>
-        public void SetupGetTokenRequest(string omsConnection, string data, HttpStatusCode statusCode, string responseContent) =>
+        public void SetupGetTokenRequest(string omsConnection, string data, HttpStatusCode statusCode, string responseContent)
+        {
+            data.Should().NotStartWith("signed:", because: "'signed:' will be added automatically.");
             _httpClientMock
                 .Expect(HttpMethod.Post, $"/api/v3/auth/cert/{omsConnection}")
                 .WithPartialContent("signed:" + data)
                 .Respond(statusCode, new StringContent(responseContent));
+        }
 
         public void SetupGetCertKeyRequest(string data) =>
             SetupGetCertKeyRequest(HttpStatusCode.OK,
@@ -37,7 +41,7 @@ namespace OmsAuthenticator.Tests
                 .Expect(HttpMethod.Get, "/api/v3/auth/cert/key")
                 .Respond(statusCode, new StringContent(responseContent));
 
-        internal void VerifyNoOutstandingExpectation() =>
+        public void VerifyNoOutstandingExpectation() =>
             _httpClientMock.VerifyNoOutstandingExpectation();
     }
 }

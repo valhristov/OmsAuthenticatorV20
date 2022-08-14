@@ -14,7 +14,7 @@ public class TokenProvider
         _omsTokenAdapter = omsTokenAdapter;
     }
 
-    public async Task<Result<Token>> GetOmsTokenAsync(TokenKey.Oms tokenKey)
+    public async Task<Result<Token>> GetOrAddOmsTokenAsync(TokenKey.Oms tokenKey)
     {
         return await GetToken(tokenKey,
             FindCompatibleToken, // when requestId is null
@@ -22,6 +22,18 @@ public class TokenProvider
 
         bool FindCompatibleToken(TokenKey key) =>
             key is TokenKey.Oms omsKey && omsKey.OmsId == tokenKey.OmsId && omsKey.ConnectionId == tokenKey.ConnectionId;
+    }
+
+    /// <summary>
+    /// For API V1. The new API will automatically request new token when a compatible
+    /// token is not found in the cache. The old API just returns not found.
+    /// </summary>
+    public async Task<Result<Token>> TryGetOmsTokenAsync(string omsId, string applicationId)
+    {
+        return await _cache.FindEntry(FindCompatibleToken);
+
+        bool FindCompatibleToken(TokenKey key) =>
+            key is TokenKey.Oms omsKey && omsKey.OmsId == omsId && omsKey.ApplicationId == applicationId;
     }
 
     public async Task<Result<Token>> GetTrueTokenAsync(TokenKey.TrueApi tokenKey)

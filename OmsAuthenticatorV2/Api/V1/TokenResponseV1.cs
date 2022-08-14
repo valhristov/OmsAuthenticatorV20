@@ -2,7 +2,7 @@
 
 namespace OmsAuthenticator.Api.V1
 {
-    public class TokenResponse
+    public class TokenResponseV1
     {
         [JsonPropertyName("token"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault), JsonInclude]
         public string? Token { get; private set; }
@@ -14,14 +14,14 @@ namespace OmsAuthenticator.Api.V1
         public List<string>? Errors { get; private set; }
 
         // For testing
-        public TokenResponse() { }
+        public TokenResponseV1() { }
 
-        public TokenResponse(IEnumerable<string> errors)
+        public TokenResponseV1(IEnumerable<string> errors)
         {
             Errors = errors.ToList();
         }
 
-        public TokenResponse(string? token, string requestId, DateTimeOffset expires)
+        public TokenResponseV1(string? token, string requestId, DateTimeOffset expires)
         {
             Token = token;
             RequestId = requestId;

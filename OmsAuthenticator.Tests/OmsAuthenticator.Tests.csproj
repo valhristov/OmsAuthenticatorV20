@@ -23,23 +23,4 @@
     <ProjectReference Include="..\OmsAuthenticatorV2\OmsAuthenticatorV2.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="Api\V1\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Remove="Api\V1\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="Api\V1\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="Api\V1\OmsToken_Get.cs" />
-    <Compile Include="Api\V1\OmsToken_Post.cs" />
-    <Compile Include="Api\V1\ResponseShould.cs" />
-    <Compile Include="Api\V1\Sign_Post.cs" />
-  </ItemGroup>
-
 </Project>
