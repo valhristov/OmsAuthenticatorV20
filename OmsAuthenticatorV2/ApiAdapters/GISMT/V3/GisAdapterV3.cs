@@ -54,9 +54,12 @@ namespace OmsAuthenticator.ApiAdapters.GISMT.V3
             return tokenResult;
         }
 
+        public async Task<Result<string>> SignAsync(string data) =>
+            await _signData.SignAsync(data, _config.Certificate);
+
         private async Task<Result<AuthData>> SignData(AuthData authData)
         {
-            var result = await _signData.SignAsync(authData.Data, _config.Certificate);
+            var result = await SignAsync(authData.Data);
             return result.Convert(value => Result.Success(new AuthData(authData.Uuid, value)));
         }
 

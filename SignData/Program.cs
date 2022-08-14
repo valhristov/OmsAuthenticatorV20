@@ -32,7 +32,7 @@ namespace SignData
                     // This is for integration/unit test purposes. We just return the
                     // same value to avoid having the CRPT certificate installed because
                     // it requires additional licensed software.
-                    Console.Write(value);
+                    Console.Write("signed:" + value);
                 }
                 else
                 {

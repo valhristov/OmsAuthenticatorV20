@@ -8,5 +8,6 @@ namespace OmsAuthenticator.ApiAdapters
 
         Task<Result<Token>> GetOmsTokenAsync(TokenKey.Oms tokenKey);
         Task<Result<Token>> GetTrueTokenAsync(TokenKey.TrueApi tokenKey);
+        Task<Result<string>> SignAsync(string data);
     }
 }

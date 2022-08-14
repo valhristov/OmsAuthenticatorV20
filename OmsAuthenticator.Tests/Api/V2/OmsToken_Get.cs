@@ -7,6 +7,8 @@ namespace OmsAuthenticator.Tests.Api.V2
     [TestClass]
     public class OmsToken_Get
     {
+        // The key of the token provider configuration to use
+        private const string ProviderKey = "key1";
         private static readonly TimeSpan Expiration = TimeSpan.FromHours(10);
 
         private OmsAuthenticatorApp App { get; }
@@ -14,12 +16,12 @@ namespace OmsAuthenticator.Tests.Api.V2
 
         public OmsToken_Get()
         {
-            // Using "integration tests" for SignDataPath to short-cirquit the signer
+            // Using "integrationtests" for Certificate to short-cirquit the signer
             App = new OmsAuthenticatorApp($@"{{
   ""Authenticator"": {{
     ""SignDataPath"": "".\\SignData.exe"",
     ""TokenProviders"": {{
-      ""key1"": {{
+      ""{ProviderKey}"": {{
         ""Adapter"": ""gis-v3"",
         ""Certificate"": ""integrationtests"",
         ""Url"": ""https://demo.crpt.ru"",
@@ -41,11 +43,11 @@ namespace OmsAuthenticator.Tests.Api.V2
         private void WaitForTokenToExpire() => App.Wait(Expiration.Add(TimeSpan.FromSeconds(1)));
 
         [DataTestMethod]
-        [DataRow("/api/v2/key1/oms/token")]
-        [DataRow("/api/v2/key1/oms/token?omsid=best")]
-        [DataRow("/api/v2/key1/oms/token?connectionid=best")]
-        [DataRow("/api/v2/key1/oms/token?omsId=best&requestId=1")]
-        [DataRow("/api/v2/key1/oms/token?connectionid=best&requestid=1")]
+        [DataRow("/api/v2/" + ProviderKey + "/oms/token")]
+        [DataRow("/api/v2/" + ProviderKey + "/oms/token?omsid=best")]
+        [DataRow("/api/v2/" + ProviderKey + "/oms/token?connectionid=best")]
+        [DataRow("/api/v2/" + ProviderKey + "/oms/token?omsId=best&requestId=1")]
+        [DataRow("/api/v2/" + ProviderKey + "/oms/token?connectionid=best&requestid=1")]
         public async Task Invalid_Request(string url)
         {
             // Arrange
@@ -73,7 +75,7 @@ namespace OmsAuthenticator.Tests.Api.V2
             App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token");
 
             // Act
-            var result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={NewGuid()}&connectionid={omsConnection}{requestIdParameter}");
+            var result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={NewGuid()}&connectionid={omsConnection}{requestIdParameter}");
 
             // Assert
             await ResponseShould.BeOk(result, "the token");
@@ -101,12 +103,12 @@ namespace OmsAuthenticator.Tests.Api.V2
             App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token");
 
             // Cache a new token
-            await Client.GetAsync($"/api/v2/key1/oms/token?omsid={NewGuid()}&connectionid={omsConnection}{requestIdParameter}");
+            await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={NewGuid()}&connectionid={omsConnection}{requestIdParameter}");
 
             WaitForTokenToExpire();
 
             // Act
-            var result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={NewGuid()}&connectionid={omsConnection}{requestIdParameter}");
+            var result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={NewGuid()}&connectionid={omsConnection}{requestIdParameter}");
 
             // Assert
             await ResponseShould.BeOk(result, "the token");
@@ -131,17 +133,17 @@ namespace OmsAuthenticator.Tests.Api.V2
             App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token");
 
             // Act
-            var result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
+            var result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
             // Assert
             await ResponseShould.BeOk(result, "the token", requestId);
 
             // Act
-            result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
+            result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
             // Assert
             await ResponseShould.BeOk(result, "the token", requestId);
 
             // Act
-            result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
+            result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
             // Assert
             await ResponseShould.BeOk(result, "the token", requestId);
 
@@ -170,19 +172,19 @@ namespace OmsAuthenticator.Tests.Api.V2
 
             // Act
             var requestId = NewGuid();
-            var result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
+            var result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
             // Assert
             await ResponseShould.BeOk(result, "the token 1", requestId);
 
             // Act
             requestId = NewGuid();
-            result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
+            result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
             // Assert
             await ResponseShould.BeOk(result, "the token 2", requestId);
 
             // Act
             requestId = NewGuid();
-            result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
+            result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
             // Assert
             await ResponseShould.BeOk(result, "the token 3", requestId);
 
@@ -205,11 +207,11 @@ namespace OmsAuthenticator.Tests.Api.V2
             App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token");
 
             // Put a token in cache
-            var result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
+            var result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
             await ResponseShould.BeOk(result, "the token", requestId);
 
             // Act - no request id parameter, we should return existing token
-            result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={omsId}&connectionid={omsConnection}");
+            result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={omsId}&connectionid={omsConnection}");
 
             // Assert
             await ResponseShould.BeOk(result, "the token", requestId);
@@ -230,12 +232,12 @@ namespace OmsAuthenticator.Tests.Api.V2
             App.GisMtApi.SetupGetCertKeyRequest(HttpStatusCode.BadRequest, "some error");
 
             // Act
-            var result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={omsId}&connectionid={omsConnection}");
+            var result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={omsId}&connectionid={omsConnection}");
             // Assert
             await ResponseShould.BeUnprocessableEntity(result, "[GET https://demo.crpt.ru/api/v3/auth/cert/key] Response was 400 with content 'some error'");
 
             // Act
-            result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={omsId}&connectionid={omsConnection}");
+            result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={omsId}&connectionid={omsConnection}");
             // Assert
             await ResponseShould.BeUnprocessableEntity(result, "[GET https://demo.crpt.ru/api/v3/auth/cert/key] Response was 400 with content 'some error'");
 
@@ -259,12 +261,12 @@ namespace OmsAuthenticator.Tests.Api.V2
             App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, HttpStatusCode.BadRequest, "some error");
 
             // Act
-            var result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={NewGuid()}&connectionid={omsConnection}");
+            var result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={NewGuid()}&connectionid={omsConnection}");
             // Assert
             await ResponseShould.BeUnprocessableEntity(result, $"[POST https://demo.crpt.ru/api/v3/auth/cert/{omsConnection}] Response was 400 with content 'some error'");
 
             // Act
-            result = await Client.GetAsync($"/api/v2/key1/oms/token?omsid={NewGuid()}&connectionid={omsConnection}");
+            result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={NewGuid()}&connectionid={omsConnection}");
             // Assert
             await ResponseShould.BeUnprocessableEntity(result, $"[POST https://demo.crpt.ru/api/v3/auth/cert/{omsConnection}] Response was 400 with content 'some error'");
 
@@ -299,7 +301,7 @@ namespace OmsAuthenticator.Tests.Api.V2
             app.GisMtApi.SetupGetCertKeyRequest(dataToSign);
 
             // Act
-            var result = await app.CreateClient().GetAsync($"/api/v2/key1/oms/token?omsid={NewGuid()}&connectionid={omsConnection}");
+            var result = await app.CreateClient().GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={NewGuid()}&connectionid={omsConnection}");
 
             // Assert
             await ResponseShould.BeUnprocessableEntity(result, "[SignData.exe] Cannot find certificate with SerialNumber='123'.\r\n");

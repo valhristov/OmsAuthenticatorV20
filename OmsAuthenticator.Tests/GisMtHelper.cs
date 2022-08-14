@@ -18,10 +18,14 @@ namespace OmsAuthenticator.Tests
         public void SetupGetTokenRequest(string omsConnection, string data, string token) =>
             SetupGetTokenRequest(omsConnection, data, HttpStatusCode.OK, JsonSerializer.Serialize(new { token = token}));
 
+        /// <param name="omsConnection"></param>
+        /// <param name="data">Provide the original data that was sent for signing.</param>
+        /// <param name="statusCode"></param>
+        /// <param name="responseContent"></param>
         public void SetupGetTokenRequest(string omsConnection, string data, HttpStatusCode statusCode, string responseContent) =>
             _httpClientMock
                 .Expect(HttpMethod.Post, $"/api/v3/auth/cert/{omsConnection}")
-                .WithPartialContent(data)
+                .WithPartialContent("signed:" + data)
                 .Respond(statusCode, new StringContent(responseContent));
 
         public void SetupGetCertKeyRequest(string data) =>
