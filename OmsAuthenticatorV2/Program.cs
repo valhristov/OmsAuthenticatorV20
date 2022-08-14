@@ -7,6 +7,17 @@ using OmsAuthenticator.ApiAdapters.GISMT.V3;
 using OmsAuthenticator.Configuration;
 using OmsAuthenticator.Framework;
 using OmsAuthenticator.Signing;
+using Serilog;
+using Serilog.Events;
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.Debug()
+    .WriteTo.RollingFile("Logs\\oms-authenticator-{Date}.log", fileSizeLimitBytes:100_000_000)
+    .CreateLogger();
+Log.Information("=======================================================================");
 
 var builder = WebApplication.CreateBuilder(
     new WebApplicationOptions
@@ -19,13 +30,16 @@ var builder = WebApplication.CreateBuilder(
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<ISystemTime>(new SystemTime());
 
+builder.Host.UseSerilog();
 builder.Host.UseWindowsService();
 
 var app = builder.Build();
 
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment()) { }
 
+app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
 
 var systemTime = app.Services.GetRequiredService<ISystemTime>();
@@ -48,30 +62,42 @@ void StartApplication(IEnumerable<IOmsTokenAdapter> adapters)
 
         var controllerV1 = new TokenControllerV1(provider);
         // OMS token, semi-backward compatibility. Applications can use this API with configuration change.
-        app.MapGet($"/api/v1/{adapter.PathSegment}/oms/token/", controllerV1.GetAsync);
-        app.MapPost($"/api/v1/{adapter.PathSegment}/oms/token/", controllerV1.PostAsync);
+        MapGet($"/api/v1/{adapter.PathSegment}/oms/token/", controllerV1.GetAsync);
+        MapPost($"/api/v1/{adapter.PathSegment}/oms/token/", controllerV1.PostAsync);
 
         var controllerV2 = new TokenControllerV2(provider);
         // OMS token. New version of API. Applications need new client to use this API.
-        app.MapGet($"/api/v2/{adapter.PathSegment}/oms/token/", controllerV2.GetOmsTokenAsync);
+        MapGet($"/api/v2/{adapter.PathSegment}/oms/token/", controllerV2.GetOmsTokenAsync);
         // TRUE API token. New API.
-        app.MapGet($"/api/v2/{adapter.PathSegment}/true/token/", controllerV2.GetTrueTokenAsync);
+        MapGet($"/api/v2/{adapter.PathSegment}/true/token/", controllerV2.GetTrueTokenAsync);
     }
 
     // Backward compatibility. Applications can use this API without any changes.
     var controller = new TokenControllerV1(new TokenProvider(cache, adapters.First()));
-    app.MapGet($"/oms/token/", controller.GetAsync);
-    app.MapPost($"/oms/token/", controller.PostAsync);
+    MapGet($"/oms/token/", controller.GetAsync);
+    MapPost($"/oms/token/", controller.PostAsync);
     // TODO: add DTABAC adapter and controller here
 
     app.Run();
+
+    void MapGet(string path, Delegate @delegate) =>
+        InvokeWithMessage(() => app.MapGet(path, @delegate), $"Mapping URL 'GET {path}'");
+
+    void MapPost(string path, Delegate @delegate) =>
+        InvokeWithMessage(() => app.MapGet(path, @delegate), $"Mapping URL 'POST {path}'");
+
+    void InvokeWithMessage(Action action, string message)
+    {
+        Log.Information(message);
+        action?.Invoke();
+    }
 }
 
 void PrintMessages(ImmutableArray<string> errors)
 {
     foreach (var message in errors)
     {
-        Console.WriteLine(message);
+        Log.Error(message);
     }
 }
 
