@@ -8,6 +8,8 @@ namespace OmsAuthenticator.Api.V1
         public string? OmsId { get; set; }
         [JsonPropertyName("omsConnection")]
         public string? OmsConnection { get; set; }
+        [JsonPropertyName("registrationKey")]
+        public string? RegistrationKey { get; set; }
         [JsonPropertyName("requestId")]
         public string? RequestId { get; set; }
     }

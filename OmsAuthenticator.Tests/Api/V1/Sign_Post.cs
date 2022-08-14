@@ -3,9 +3,9 @@ using System.Text;
 using System.Text.Json;
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using OmsAuthenticator.Api.V2;
+using OmsAuthenticator.Api.V1;
 
-namespace OmsAuthenticator.Tests.Api.V2
+namespace OmsAuthenticator.Tests.Api.V1
 {
     [TestClass]
     public class Sign_Post
@@ -36,7 +36,7 @@ namespace OmsAuthenticator.Tests.Api.V2
         }
 
         private async Task<HttpResponseMessage> PostAsync(object request) =>
-            await Client.PostAsync($"/api/v2/{ProviderKey}/sign", new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json"));
+            await Client.PostAsync($"/api/v1/signature", new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json"));
 
         [DataTestMethod]
         [DataRow("")]
@@ -48,7 +48,7 @@ namespace OmsAuthenticator.Tests.Api.V2
             // Arrange
 
             // Act
-            var response = await Client.PostAsync($"/api/v2/{ProviderKey}/sign", new StringContent(body, Encoding.UTF8, "application/json"));
+            var response = await Client.PostAsync($"/api/v1/signature", new StringContent(body, Encoding.UTF8, "application/json"));
 
             // Assert
             await ResponseShould.BeBadRequest(response);
@@ -66,7 +66,7 @@ namespace OmsAuthenticator.Tests.Api.V2
             response.StatusCode.Should().Be(HttpStatusCode.OK);
 
             var content = await response.Content.ReadAsStringAsync();
-            var signatureResponse = JsonSerializer.Deserialize<SignatureResponseV2>(content)!;
+            var signatureResponse = JsonSerializer.Deserialize<SignatureResponseV1>(content)!;
 
             signatureResponse.Should().NotBeNull();
             // we use "integrationtests" for certificate and the signer returns the input with "signed:" prefix

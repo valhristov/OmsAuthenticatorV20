@@ -12,22 +12,22 @@ namespace OmsAuthenticator.Api.V2
             _adapter = adapter;
         }
 
-        public async Task<IResult> PostAsync([FromBody] SignatureRequest? request)
+        public async Task<IResult> PostAsync([FromBody] SignatureRequestV2? request)
         {
             if (request == null)
             {
-                return Results.BadRequest(new TokenResponse(new[] { $"Invalid request." }));
+                return Results.BadRequest(new TokenResponseV2(new[] { $"Invalid request." }));
             }
             if (request.PayloadBase64 == null)
             {
-                return Results.BadRequest(new TokenResponse(new[] { $"payloadBase64 body parameter is required." }));
+                return Results.BadRequest(new TokenResponseV2(new[] { $"payloadBase64 body parameter is required." }));
             }
 
             var result = await _adapter.SignAsync(request.PayloadBase64);
 
             return result.Select(
-                signed => Results.Ok(new SignatureResponse(signed)),
-                errors => Results.UnprocessableEntity(new SignatureResponse(errors)));
+                signed => Results.Ok(new SignatureResponseV2(signed)),
+                errors => Results.UnprocessableEntity(new SignatureResponseV2(errors)));
         }
     }
 }

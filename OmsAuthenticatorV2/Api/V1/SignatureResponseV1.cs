@@ -1,8 +1,8 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace OmsAuthenticator.Api.V2
+namespace OmsAuthenticator.Api.V1
 {
-    public class SignatureResponse
+    public class SignatureResponseV1
     {
         [JsonPropertyName("signature"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault), JsonInclude]
         public string? Signature { get; private set; }
@@ -10,14 +10,14 @@ namespace OmsAuthenticator.Api.V2
         public List<string>? Errors { get; private set; }
 
         // For testing
-        public SignatureResponse() { }
+        public SignatureResponseV1() { }
 
-        public SignatureResponse(IEnumerable<string> errors)
+        public SignatureResponseV1(IEnumerable<string> errors)
         {
             Errors = errors.ToList();
         }
 
-        public SignatureResponse(string signature)
+        public SignatureResponseV1(string signature)
         {
             Signature = signature;
         }

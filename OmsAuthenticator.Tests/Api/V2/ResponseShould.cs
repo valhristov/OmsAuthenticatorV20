@@ -11,7 +11,7 @@ namespace OmsAuthenticator.Tests.Api.V2
         {
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-            var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(await response.Content.ReadAsStringAsync())!;
+            var tokenResponse = JsonSerializer.Deserialize<TokenResponseV2>(await response.Content.ReadAsStringAsync())!;
 
             tokenResponse.Should().NotBeNull();
             tokenResponse.Token.Should().BeNull();
@@ -20,7 +20,7 @@ namespace OmsAuthenticator.Tests.Api.V2
 
         public static async Task BeOk(HttpResponseMessage response, string expectedToken, string? expectedRequestId = null)
         {
-            var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(await response.Content.ReadAsStringAsync())!;
+            var tokenResponse = JsonSerializer.Deserialize<TokenResponseV2>(await response.Content.ReadAsStringAsync())!;
 
             response.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -35,7 +35,7 @@ namespace OmsAuthenticator.Tests.Api.V2
 
         public static async Task BeUnprocessableEntity(HttpResponseMessage response, string expectedError)
         {
-            var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(await response.Content.ReadAsStringAsync())!;
+            var tokenResponse = JsonSerializer.Deserialize<TokenResponseV2>(await response.Content.ReadAsStringAsync())!;
 
             response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
 

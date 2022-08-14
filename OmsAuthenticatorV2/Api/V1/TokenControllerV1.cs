@@ -31,6 +31,10 @@ namespace OmsAuthenticator.Api.V1
             {
                 return Results.BadRequest(new TokenResponse(new[] { $"Invalid request." }));
             }
+            if (request.RegistrationKey == null)
+            {
+                return Results.BadRequest(new TokenResponse(new[] { $"registrationKey body parameter is required." }));
+            }
             if (request.OmsConnection == null)
             {
                 return Results.BadRequest(new TokenResponse(new[] { $"omsConnection body parameter is required." }));

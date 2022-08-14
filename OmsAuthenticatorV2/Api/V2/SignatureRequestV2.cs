@@ -2,7 +2,7 @@
 
 namespace OmsAuthenticator.Api.V2
 {
-    public class SignatureRequest
+    public class SignatureRequestV2
     {
         /// <summary>
         /// Base64-encoded string to sign.
