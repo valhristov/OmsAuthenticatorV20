@@ -1,6 +1,5 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
-using OmsAuthenticator.ApiAdapters;
 
 namespace OmsAuthenticator.Framework
 {

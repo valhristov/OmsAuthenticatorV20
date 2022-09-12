@@ -18,7 +18,7 @@ public class TokenProvider
     {
         return await GetToken(tokenKey,
             FindCompatibleToken, // when requestId is null
-            _omsTokenAdapter.GetOmsTokenAsync);
+            _omsTokenAdapter.GetTokenAsync);
 
         bool FindCompatibleToken(TokenKey key) =>
             key is TokenKey.Oms omsKey && omsKey.OmsId == tokenKey.OmsId && omsKey.ConnectionId == tokenKey.ConnectionId;
@@ -40,7 +40,7 @@ public class TokenProvider
     {
         return await GetToken(tokenKey,
             FindCompatibleToken, // when requestId is null
-            _omsTokenAdapter.GetTrueTokenAsync);
+            _omsTokenAdapter.GetTokenAsync);
 
         bool FindCompatibleToken(TokenKey key) =>
             key is TokenKey.TrueApi;

@@ -78,8 +78,6 @@ void StartApplication(IEnumerable<IOmsTokenAdapter> adapters)
         MapPost($"/api/v2/{adapter.PathSegment}/sign/", signatureControllerV2.PostAsync);
     }
 
-    // TODO: add signature controller here
-
     // Backward compatibility. Applications can use these APIs without any changes.
     var controller = new TokenControllerV1(new TokenProvider(cache, adapters.First()));
     MapGet($"/oms/token/", controller.GetAsync);

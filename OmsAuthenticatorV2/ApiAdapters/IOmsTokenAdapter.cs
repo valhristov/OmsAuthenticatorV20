@@ -6,8 +6,7 @@ namespace OmsAuthenticator.ApiAdapters
     {
         string PathSegment { get; }
 
-        Task<Result<Token>> GetOmsTokenAsync(TokenKey.Oms tokenKey);
-        Task<Result<Token>> GetTrueTokenAsync(TokenKey.TrueApi tokenKey);
+        Task<Result<Token>> GetTokenAsync(TokenKey tokenKey);
         Task<Result<string>> SignAsync(string data);
     }
 }

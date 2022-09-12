@@ -5,18 +5,18 @@ using OmsAuthenticator.Configuration;
 using OmsAuthenticator.Framework;
 using OmsAuthenticator.Signing;
 
-namespace OmsAuthenticator.ApiAdapters.GISMT.V3
+namespace OmsAuthenticator.ApiAdapters.TRUEAPI.V3
 {
-    public class GisAdapterV3 : IOmsTokenAdapter
+    public class TrueApiAdapterV3 : IOmsTokenAdapter
     {
-        public const string AdapterName = "gis-v3";
+        public const string AdapterName = "true-v3";
 
         private readonly TokenProviderConfig _config;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ISystemTime _systemTime;
         private readonly ConsoleSignData _signData;
 
-        public GisAdapterV3(TokenProviderConfig config, IHttpClientFactory httpClientFactory, ISystemTime systemTime, ConsoleSignData signData)
+        public TrueApiAdapterV3(TokenProviderConfig config, IHttpClientFactory httpClientFactory, ISystemTime systemTime, ConsoleSignData signData)
         {
             _config = config;
             _httpClientFactory = httpClientFactory;
@@ -28,7 +28,7 @@ namespace OmsAuthenticator.ApiAdapters.GISMT.V3
 
         public async Task<Result<Token>> GetTokenAsync(TokenKey tokenKey)
         {
-            if (tokenKey is TokenKey.Oms omsKey)
+            if (tokenKey is TokenKey.TrueApi trueApiKey)
             {
                 var httpClient = _httpClientFactory.CreateClient();
                 httpClient.BaseAddress = new Uri(_config.Url);
@@ -37,7 +37,7 @@ namespace OmsAuthenticator.ApiAdapters.GISMT.V3
 
                 var signedDataResult = await authDataResult.ConvertAsync(async authData => await SignData(authData));
 
-                var tokenResult = await signedDataResult.ConvertAsync(async authData => await GetOmsTokenAsync(omsKey, authData, httpClient));
+                var tokenResult = await signedDataResult.ConvertAsync(async authData => await GetTrueTokenAsync(trueApiKey, authData, httpClient));
 
                 return tokenResult;
             }
@@ -74,9 +74,9 @@ namespace OmsAuthenticator.ApiAdapters.GISMT.V3
                     : Result.Failure<AuthData>("Response does not contain uuid or data");
         }
 
-        private async Task<Result<Token>> GetOmsTokenAsync(TokenKey.Oms tokenKey, AuthData authData, HttpClient httpClient)
+        private async Task<Result<Token>> GetTrueTokenAsync(TokenKey.TrueApi tokenKey, AuthData authData, HttpClient httpClient)
         {
-            var url = $"/api/v3/auth/cert/{tokenKey.ConnectionId}";
+            var url = $"/api/v3/true-api/auth/simpleSignIn";
 
             var tokenRequest = new GetTokenRequest
             {
