@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\SignData\SignData.csproj">
       <Private>True</Private>
+      <ReferenceOutputAssembly>False</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
 
