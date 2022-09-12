@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace OmsAuthenticator.Tests.Api.V2
 {
     [TestClass]
-    public class OmsToken_Get
+    public class GetOmsTokenSpec
     {
         // The key of the token provider configuration to use
         private const string ProviderKey = "key1";
@@ -14,7 +14,7 @@ namespace OmsAuthenticator.Tests.Api.V2
         private OmsAuthenticatorApp App { get; }
         private HttpClient Client { get; }
 
-        public OmsToken_Get()
+        public GetOmsTokenSpec()
         {
             // Using "integrationtests" for Certificate to short-cirquit the signer
             App = new OmsAuthenticatorApp($@"{{
@@ -22,7 +22,7 @@ namespace OmsAuthenticator.Tests.Api.V2
     ""SignDataPath"": "".\\SignData.exe"",
     ""TokenProviders"": {{
       ""{ProviderKey}"": {{
-        ""Adapter"": ""gis-v3"",
+        ""Adapter"": ""oms-v3"",
         ""Certificate"": ""integrationtests"",
         ""Url"": ""https://demo.crpt.ru"",
         ""Expiration"": ""{Expiration}""
@@ -35,9 +35,6 @@ namespace OmsAuthenticator.Tests.Api.V2
 
         [DebuggerStepThrough]
         private string NewGuid() => Guid.NewGuid().ToString();
-
-        [DebuggerStepThrough]
-        private string NewDataToSign() => Guid.NewGuid().ToString().Replace("-", "");
 
         [DebuggerStepThrough]
         private void WaitForTokenToExpire() => App.Wait(Expiration.Add(TimeSpan.FromSeconds(1)));
@@ -53,10 +50,28 @@ namespace OmsAuthenticator.Tests.Api.V2
             // Arrange
 
             // Act
-            using var response = await Client.GetAsync(url);
+            using var result = await Client.GetAsync(url);
 
             // Assert
-            await ResponseShould.BeBadRequest(response);
+            await ResponseShould.BeBadRequest(result);
+        }
+
+        [DataTestMethod]
+        [DataRow("&requestid=1")] // we get token with request id
+        [DataRow("")] // we get token without request id
+        public async Task Unsupported_Token_Provider(string requestIdParameter)
+        {
+            // Note the path contains "true" instead of "oms". This means the URL is for
+            // true api tokens. Valid OMS request parameters provided to the TRUE API
+            // should generate response with status code 422.
+
+            // Arrange
+
+            // Act
+            var result = await Client.GetAsync($"/api/v2/{ProviderKey}/true/token?omsid={NewGuid()}&connectionid={NewGuid()}{requestIdParameter}");
+
+            // Assert
+            await ResponseShould.BeUnprocessableEntity(result, "Adapter 'oms-v3' does not support tokens of type 'TrueApi'. Are you using the wrong URL?");
         }
 
         [DataTestMethod]
@@ -69,10 +84,8 @@ namespace OmsAuthenticator.Tests.Api.V2
 
             // Arrange
             var omsConnection = NewGuid();
-            var dataToSign = NewDataToSign();
 
-            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token");
+            App.GisApi.ExpectGetTokenSequence(omsConnection, "the token");
 
             // Act
             var result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={NewGuid()}&connectionid={omsConnection}{requestIdParameter}");
@@ -80,7 +93,7 @@ namespace OmsAuthenticator.Tests.Api.V2
             // Assert
             await ResponseShould.BeOk(result, "the token");
 
-            App.GisMtApi.VerifyNoOutstandingExpectation();
+            App.GisApi.VerifyNoOutstandingExpectation();
         }
 
         [DataTestMethod]
@@ -93,14 +106,10 @@ namespace OmsAuthenticator.Tests.Api.V2
 
             // Arrange
             var omsConnection = NewGuid();
-            var dataToSign = NewDataToSign();
 
-            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token");
+            App.GisApi.ExpectGetTokenSequence(omsConnection, "the token 1");
 
-            dataToSign = NewDataToSign();
-            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token");
+            App.GisApi.ExpectGetTokenSequence(omsConnection, "the token 2");
 
             // Cache a new token
             await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={NewGuid()}&connectionid={omsConnection}{requestIdParameter}");
@@ -111,9 +120,9 @@ namespace OmsAuthenticator.Tests.Api.V2
             var result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={NewGuid()}&connectionid={omsConnection}{requestIdParameter}");
 
             // Assert
-            await ResponseShould.BeOk(result, "the token");
+            await ResponseShould.BeOk(result, "the token 2");
 
-            App.GisMtApi.VerifyNoOutstandingExpectation();
+            App.GisApi.VerifyNoOutstandingExpectation();
         }
 
         [TestMethod]
@@ -127,10 +136,8 @@ namespace OmsAuthenticator.Tests.Api.V2
             var omsConnection = NewGuid();
             var omsId = NewGuid();
             var requestId = NewGuid();
-            var dataToSign = NewDataToSign();
 
-            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token");
+            App.GisApi.ExpectGetTokenSequence(omsConnection, "the token");
 
             // Act
             var result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
@@ -147,7 +154,7 @@ namespace OmsAuthenticator.Tests.Api.V2
             // Assert
             await ResponseShould.BeOk(result, "the token", requestId);
 
-            App.GisMtApi.VerifyNoOutstandingExpectation();
+            App.GisApi.VerifyNoOutstandingExpectation();
         }
 
         [TestMethod]
@@ -160,15 +167,9 @@ namespace OmsAuthenticator.Tests.Api.V2
             var omsConnection = NewGuid();
             var omsId = NewGuid();
 
-            var dataToSign = NewDataToSign();
-            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 1");
-            dataToSign = NewDataToSign();
-            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 2");
-            dataToSign = NewDataToSign();
-            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 3");
+            App.GisApi.ExpectGetTokenSequence(omsConnection, "the token 1");
+            App.GisApi.ExpectGetTokenSequence(omsConnection, "the token 2");
+            App.GisApi.ExpectGetTokenSequence(omsConnection, "the token 3");
 
             // Act
             var requestId = NewGuid();
@@ -188,7 +189,7 @@ namespace OmsAuthenticator.Tests.Api.V2
             // Assert
             await ResponseShould.BeOk(result, "the token 3", requestId);
 
-            App.GisMtApi.VerifyNoOutstandingExpectation();
+            App.GisApi.VerifyNoOutstandingExpectation();
         }
 
         [TestMethod]
@@ -201,10 +202,8 @@ namespace OmsAuthenticator.Tests.Api.V2
             var omsConnection = NewGuid();
             var omsId = NewGuid();
             var requestId = NewGuid();
-            var dataToSign = NewDataToSign();
 
-            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token");
+            App.GisApi.ExpectGetTokenSequence(omsConnection, "the token");
 
             // Put a token in cache
             var result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={omsId}&connectionid={omsConnection}&requestid={requestId}");
@@ -216,7 +215,7 @@ namespace OmsAuthenticator.Tests.Api.V2
             // Assert
             await ResponseShould.BeOk(result, "the token", requestId);
 
-            App.GisMtApi.VerifyNoOutstandingExpectation();
+            App.GisApi.VerifyNoOutstandingExpectation();
         }
 
         [TestMethod]
@@ -228,21 +227,21 @@ namespace OmsAuthenticator.Tests.Api.V2
             var omsId = NewGuid();
             var omsConnection = NewGuid();
 
-            App.GisMtApi.SetupGetCertKeyRequest(HttpStatusCode.BadRequest, "some error");
-            App.GisMtApi.SetupGetCertKeyRequest(HttpStatusCode.BadRequest, "some error");
+            App.GisApi.ExpectGetCertKeyRequest(HttpStatusCode.BadRequest, "some error 1");
+            App.GisApi.ExpectGetCertKeyRequest(HttpStatusCode.BadRequest, "some error 2");
 
             // Act
             var result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={omsId}&connectionid={omsConnection}");
             // Assert
-            await ResponseShould.BeUnprocessableEntity(result, "[GET https://demo.crpt.ru/api/v3/auth/cert/key] Response was 400 with content 'some error'");
+            await ResponseShould.BeUnprocessableEntity(result, "[GET https://demo.crpt.ru/api/v3/auth/cert/key] Response was 400 with content 'some error 1'");
 
             // Act
             result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={omsId}&connectionid={omsConnection}");
             // Assert
-            await ResponseShould.BeUnprocessableEntity(result, "[GET https://demo.crpt.ru/api/v3/auth/cert/key] Response was 400 with content 'some error'");
+            await ResponseShould.BeUnprocessableEntity(result, "[GET https://demo.crpt.ru/api/v3/auth/cert/key] Response was 400 with content 'some error 2'");
 
             // Both GIS MT API requests are invoked. This means that our second request invoked the API
-            App.GisMtApi.VerifyNoOutstandingExpectation();
+            App.GisApi.VerifyNoOutstandingExpectation();
         }
 
         [TestMethod]
@@ -253,25 +252,21 @@ namespace OmsAuthenticator.Tests.Api.V2
             // Arrange
             var omsConnection = NewGuid();
 
-            var dataToSign = NewDataToSign();
-            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, HttpStatusCode.BadRequest, "some error");
-            dataToSign = NewDataToSign();
-            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, HttpStatusCode.BadRequest, "some error");
+            App.GisApi.ExpectGetTokenSequence(omsConnection, HttpStatusCode.BadRequest, "some error 1");
+            App.GisApi.ExpectGetTokenSequence(omsConnection, HttpStatusCode.BadRequest, "some error 2");
 
             // Act
             var result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={NewGuid()}&connectionid={omsConnection}");
             // Assert
-            await ResponseShould.BeUnprocessableEntity(result, $"[POST https://demo.crpt.ru/api/v3/auth/cert/{omsConnection}] Response was 400 with content 'some error'");
+            await ResponseShould.BeUnprocessableEntity(result, $"[POST https://demo.crpt.ru/api/v3/auth/cert/{omsConnection}] Response was 400 with content 'some error 1'");
 
             // Act
             result = await Client.GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={NewGuid()}&connectionid={omsConnection}");
             // Assert
-            await ResponseShould.BeUnprocessableEntity(result, $"[POST https://demo.crpt.ru/api/v3/auth/cert/{omsConnection}] Response was 400 with content 'some error'");
+            await ResponseShould.BeUnprocessableEntity(result, $"[POST https://demo.crpt.ru/api/v3/auth/cert/{omsConnection}] Response was 400 with content 'some error 2'");
 
             // All GIS MT API requests are invoked. This means that our second request invoked the API
-            App.GisMtApi.VerifyNoOutstandingExpectation();
+            App.GisApi.VerifyNoOutstandingExpectation();
         }
 
         [TestMethod]
@@ -286,7 +281,7 @@ namespace OmsAuthenticator.Tests.Api.V2
     ""SignDataPath"": "".\\SignData.exe"",
     ""TokenProviders"": {{
       ""key1"": {{
-        ""Adapter"": ""gis-v3"",
+        ""Adapter"": ""oms-v3"",
         ""Certificate"": ""123"",
         ""Url"": ""https://demo.crpt.ru"",
         ""Expiration"": ""{Expiration}""
@@ -296,9 +291,8 @@ namespace OmsAuthenticator.Tests.Api.V2
 }}");
 
             var omsConnection = NewGuid();
-            var dataToSign = NewDataToSign();
 
-            app.GisMtApi.SetupGetCertKeyRequest(dataToSign);
+            app.GisApi.ExpectGetCertKeyRequest();
 
             // Act
             var result = await app.CreateClient().GetAsync($"/api/v2/{ProviderKey}/oms/token?omsid={NewGuid()}&connectionid={omsConnection}");
@@ -306,7 +300,7 @@ namespace OmsAuthenticator.Tests.Api.V2
             // Assert
             await ResponseShould.BeUnprocessableEntity(result, "[SignData.exe] Cannot find certificate with SerialNumber='123'.\r\n");
 
-            app.GisMtApi.VerifyNoOutstandingExpectation();
+            app.GisApi.VerifyNoOutstandingExpectation();
         }
     }
 }

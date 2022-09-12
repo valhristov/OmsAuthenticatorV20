@@ -28,7 +28,7 @@ namespace OmsAuthenticator.Tests.Api.V1
     ""SignDataPath"": "".\\SignData.exe"",
     ""TokenProviders"": {{
       ""key1"": {{
-        ""Adapter"": ""gis-v3"",
+        ""Adapter"": ""oms-v3"",
         ""Certificate"": ""integrationtests"",
         ""Url"": ""https://demo.crpt.ru"",
         ""Expiration"": ""{Expiration}""
@@ -75,10 +75,7 @@ namespace OmsAuthenticator.Tests.Api.V1
 
             // Arrange
             var omsConnection = NewGuid();
-            var dataToSign = NewDataToSign();
-
-            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token");
+            App.GisApi.ExpectGetTokenSequence(omsConnection, "the token");
 
             // Get a token
             var result = await PostAsync(new { registrationKey = registrationKey, omsConnection = omsConnection, omsId = omsId, requestId = NewGuid(), });
@@ -102,11 +99,9 @@ namespace OmsAuthenticator.Tests.Api.V1
             // Arrange
             var omsId = NewGuid();
             var omsConnection = NewGuid();
-            var dataToSign = NewDataToSign();
             var registrationKey = NewGuid();
 
-            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token");
+            App.GisApi.ExpectGetTokenSequence(omsConnection, "the token");
 
             // Get a token
             var result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = NewGuid(), registrationKey = registrationKey, });

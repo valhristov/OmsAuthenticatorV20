@@ -20,7 +20,7 @@ namespace OmsAuthenticator.Tests.Api.V1
     ""SignDataPath"": "".\\SignData.exe"",
     ""TokenProviders"": {{
       ""key1"": {{
-        ""Adapter"": ""gis-v3"",
+        ""Adapter"": ""oms-v3"",
         ""Certificate"": ""integrationtests"",
         ""Url"": ""https://demo.crpt.ru"",
         ""Expiration"": ""{Expiration}""
@@ -64,16 +64,14 @@ namespace OmsAuthenticator.Tests.Api.V1
         public async Task No_Token_In_Cache()
         {
             var omsConnection = NewGuid();
-            var dataToSign = NewDataToSign();
 
-            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 1");
+            App.GisApi.ExpectGetTokenSequence(omsConnection, "the token 1");
 
             var result = await PostAsync(new { omsConnection = omsConnection, omsId = NewGuid(), requestId = NewGuid(), registrationKey = "inextor", });
 
             await ResponseShould.BeOk(result, "the token 1");
 
-            App.GisMtApi.VerifyNoOutstandingExpectation();
+            App.GisApi.VerifyNoOutstandingExpectation();
         }
 
         [TestMethod]
@@ -84,10 +82,8 @@ namespace OmsAuthenticator.Tests.Api.V1
             var omsConnection = NewGuid();
             var omsId = NewGuid();
             var requestId = NewGuid();
-            var dataToSign = NewDataToSign();
 
-            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token");
+            App.GisApi.ExpectGetTokenSequence(omsConnection, "the token");
 
             var result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, registrationKey = "inextor", });
             await ResponseShould.BeOk(result, "the token");
@@ -98,7 +94,7 @@ namespace OmsAuthenticator.Tests.Api.V1
             result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, registrationKey = "inextor", });
             await ResponseShould.BeOk(result, "the token");
 
-            App.GisMtApi.VerifyNoOutstandingExpectation();
+            App.GisApi.VerifyNoOutstandingExpectation();
         }
 
         [TestMethod]
@@ -109,15 +105,9 @@ namespace OmsAuthenticator.Tests.Api.V1
             var omsConnection = NewGuid();
             var omsId = NewGuid();
 
-            var dataToSign = NewDataToSign();
-            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 1");
-            dataToSign = NewDataToSign();
-            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 2");
-            dataToSign = NewDataToSign();
-            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 3");
+            App.GisApi.ExpectGetTokenSequence(omsConnection, "the token 1");
+            App.GisApi.ExpectGetTokenSequence(omsConnection, "the token 2");
+            App.GisApi.ExpectGetTokenSequence(omsConnection, "the token 3");
 
             var result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = NewGuid(), registrationKey = "inextor", });
             await ResponseShould.BeOk(result, "the token 1");
@@ -128,7 +118,7 @@ namespace OmsAuthenticator.Tests.Api.V1
             result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = NewGuid(), registrationKey = "inextor", });
             await ResponseShould.BeOk(result, "the token 3");
 
-            App.GisMtApi.VerifyNoOutstandingExpectation();
+            App.GisApi.VerifyNoOutstandingExpectation();
         }
 
         [TestMethod]
@@ -140,15 +130,9 @@ namespace OmsAuthenticator.Tests.Api.V1
             var omsId = NewGuid();
             var requestId = NewGuid();
 
-            var dataToSign = NewDataToSign();
-            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 1");
-            dataToSign = NewDataToSign();
-            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 2");
-            dataToSign = NewDataToSign();
-            App.GisMtApi.SetupGetCertKeyRequest(dataToSign);
-            App.GisMtApi.SetupGetTokenRequest(omsConnection, dataToSign, "the token 3");
+            App.GisApi.ExpectGetTokenSequence(omsConnection, "the token 1");
+            App.GisApi.ExpectGetTokenSequence(omsConnection, "the token 2");
+            App.GisApi.ExpectGetTokenSequence(omsConnection, "the token 3");
 
             var result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, registrationKey = "inextor", });
             await ResponseShould.BeOk(result, "the token 1");
@@ -163,7 +147,7 @@ namespace OmsAuthenticator.Tests.Api.V1
             result = await PostAsync(new { omsConnection = omsConnection, omsId = omsId, requestId = requestId, registrationKey = "inextor", });
             await ResponseShould.BeOk(result, "the token 3");
 
-            App.GisMtApi.VerifyNoOutstandingExpectation();
+            App.GisApi.VerifyNoOutstandingExpectation();
         }
 
         [DebuggerStepThrough]

@@ -24,7 +24,7 @@ namespace OmsAuthenticator.Tests.Api.V1
     ""SignDataPath"": "".\\SignData.exe"",
     ""TokenProviders"": {{
       ""{ProviderKey}"": {{
-        ""Adapter"": ""gis-v3"",
+        ""Adapter"": ""oms-v3"",
         ""Certificate"": ""integrationtests"",
         ""Url"": ""https://demo.crpt.ru"",
         ""Expiration"": ""00:00:00""

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using OmsAuthenticator.ApiAdapters.GISMT.V3;
+using OmsAuthenticator.ApiAdapters.TRUEAPI.V3;
 using OmsAuthenticator.Framework;
 
 namespace OmsAuthenticator.Configuration;
@@ -35,7 +36,10 @@ public record TokenProviderConfig(string PathSegment, string AdapterName, string
             : Result.Failure<string>($"Configured Expiration '{expiration}' is not a valid time span.");
 
     private static Result<string> ValidateAdapter(string adapter) =>
-        adapter == GisAdapterV3.AdapterName
-            ? Result.Success(adapter)
-            : Result.Failure<string>($"Configured Adapter '{adapter}' is not supported.");
+        adapter switch
+        {
+            GisAdapterV3.AdapterName or
+            TrueApiAdapterV3.AdapterName => Result.Success(adapter),
+            _ => Result.Failure<string>($"Configured Adapter '{adapter}' is not supported."),
+        };
 }

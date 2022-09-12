@@ -9,7 +9,7 @@ namespace OmsAuthenticator.ApiAdapters.GISMT.V3
 {
     public class GisAdapterV3 : IOmsTokenAdapter
     {
-        public const string AdapterName = "gis-v3";
+        public const string AdapterName = "oms-v3";
 
         private readonly TokenProviderConfig _config;
         private readonly IHttpClientFactory _httpClientFactory;

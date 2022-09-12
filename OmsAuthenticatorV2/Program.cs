@@ -4,6 +4,7 @@ using OmsAuthenticator.Api.V1;
 using OmsAuthenticator.Api.V2;
 using OmsAuthenticator.ApiAdapters;
 using OmsAuthenticator.ApiAdapters.GISMT.V3;
+using OmsAuthenticator.ApiAdapters.TRUEAPI.V3;
 using OmsAuthenticator.Configuration;
 using OmsAuthenticator.Framework;
 using OmsAuthenticator.Signing;
@@ -119,11 +120,15 @@ Result<IEnumerable<IOmsTokenAdapter>> GetAdapterInstances(AuthenticatorConfig co
         tokenProviderConfig.AdapterName switch
         {
             GisAdapterV3.AdapterName => Result.Success(GetGisAdapterV3(tokenProviderConfig)),
+            TrueApiAdapterV3.AdapterName => Result.Success(GetTrueAdapterV3(tokenProviderConfig)),
             _ => Result.Failure<IOmsTokenAdapter>($"Adapter '{tokenProviderConfig.AdapterName}' is not supported."),
         };
 
     IOmsTokenAdapter GetGisAdapterV3(TokenProviderConfig tokenProviderConfig) =>
         new GisAdapterV3(tokenProviderConfig, httpClientFactory, systemTime, signData);
+
+    IOmsTokenAdapter GetTrueAdapterV3(TokenProviderConfig tokenProviderConfig) =>
+        new TrueApiAdapterV3(tokenProviderConfig, httpClientFactory, systemTime, signData);
 }
 
 // Make the implicit Program class public so test projects can access it

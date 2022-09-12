@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Moq;
 using OmsAuthenticator.Framework;
+using RichardSzalay.MockHttp;
 
 namespace OmsAuthenticator.Tests
 {
@@ -14,16 +15,27 @@ namespace OmsAuthenticator.Tests
         private readonly SystemTimeMock _systemTimeMock;
         private readonly string _configurationJson;
 
-        public GisMtHelper GisMtApi { get; } = new GisMtHelper();
+        public OmsTokenApiHelper GisApi { get; }
+        public TrueApiTokenApiHelper TrueApi { get; }
 
         public OmsAuthenticatorApp(string configurationJson)
         {
             _systemTimeMock = new SystemTimeMock();
 
+            var httpClientMock = new MockHttpMessageHandler();
+
+            GisApi = new OmsTokenApiHelper(httpClientMock);
+            TrueApi = new TrueApiTokenApiHelper(httpClientMock);
+
             _httpClientFactoryMock = new Mock<IHttpClientFactory>();
             _httpClientFactoryMock
                 .Setup(x => x.CreateClient(It.IsAny<string>()))
-                .Returns(() => GisMtApi.GetHttpClient());
+                .Returns(() =>
+                {
+                    var client = httpClientMock.ToHttpClient();
+                    client.BaseAddress = new Uri("http://test.com");
+                    return client;
+                });
             _configurationJson = configurationJson;
         }
 

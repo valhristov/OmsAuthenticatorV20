@@ -8,7 +8,7 @@ using OmsAuthenticator.Api.V2;
 namespace OmsAuthenticator.Tests.Api.V2
 {
     [TestClass]
-    public class Sign_Post
+    public class SignSpec
     {
         // The key of the token provider configuration to use
         private const string ProviderKey = "key1";
@@ -16,7 +16,7 @@ namespace OmsAuthenticator.Tests.Api.V2
         public OmsAuthenticatorApp App { get; }
         public HttpClient Client { get; }
 
-        public Sign_Post()
+        public SignSpec()
         {
             // Using "integrationtests" for Certificate to short-cirquit the signer
             App = new OmsAuthenticatorApp($@"{{
@@ -24,7 +24,7 @@ namespace OmsAuthenticator.Tests.Api.V2
     ""SignDataPath"": "".\\SignData.exe"",
     ""TokenProviders"": {{
       ""{ProviderKey}"": {{
-        ""Adapter"": ""gis-v3"",
+        ""Adapter"": ""oms-v3"",
         ""Certificate"": ""integrationtests"",
         ""Url"": ""https://demo.crpt.ru"",
         ""Expiration"": ""00:00:00""
