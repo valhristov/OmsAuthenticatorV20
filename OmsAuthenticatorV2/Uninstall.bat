@@ -1,1 +1,1 @@
-sc delete OmsAuthenticator
+sc delete OmsAuthenticatorV2

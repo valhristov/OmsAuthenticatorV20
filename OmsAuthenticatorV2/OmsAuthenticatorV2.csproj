@@ -17,10 +17,10 @@
 
   <ItemGroup>
       <!--Reference the SignData project binaries directly-->
-      <None Include="..\SignData\**\SignData.exe" Link="SignData\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-      <None Include="..\SignData\**\SignData.exe.config" Link="SignData\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-      <None Include="..\SignData\**\SignData.pdb" Link="SignData\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-      <None Include="..\SignData\**\System.Security.Cryptography.Pkcs.dll" Link="SignData\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+      <None Include="..\SignData\bin\Release\**\SignData.exe" Link="SignData\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+      <None Include="..\SignData\bin\Release\**\SignData.exe.config" Link="SignData\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+      <None Include="..\SignData\bin\Release\**\SignData.pdb" Link="SignData\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+      <None Include="..\SignData\bin\Release\**\System.Security.Cryptography.Pkcs.dll" Link="SignData\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

@@ -11,11 +11,13 @@ using OmsAuthenticator.Signing;
 using Serilog;
 using Serilog.Events;
 
+Directory.SetCurrentDirectory(AppContext.BaseDirectory); // needed to locate SignData.exe
+
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
     .Enrich.FromLogContext()
     .WriteTo.Console()
-    .WriteTo.RollingFile("Logs\\{Date}.log", fileSizeLimitBytes:100_000_000)
+    .WriteTo.RollingFile(Path.GetFullPath("Logs\\{Date}.log"), fileSizeLimitBytes:100_000_000)
     .CreateLogger();
 Log.Information("=======================================================================");
 
@@ -50,13 +52,11 @@ var cache = new TokenCache(systemTime);
 
 // Parse configuration
 AuthenticatorConfig.Create(configuration)
-// Instantiate GIS MT API adapters
+    // Instantiate GIS MT API adapters
     .Convert(GetAdapterInstances)
-// Register API endpoints and start application
     .Match(
-        onSuccess: StartApplication,
-// When any of the operations above fails, print errors here
-        onFailure: PrintMessages);
+        onSuccess: StartApplication, // Register API endpoints and start application
+        onFailure: PrintMessages); // When any of the operations above fails, print errors here
 
 void StartApplication(IEnumerable<IOmsTokenAdapter> adapters)
 {
@@ -87,7 +87,15 @@ void StartApplication(IEnumerable<IOmsTokenAdapter> adapters)
     MapPost($"/api/v1/signature/", signatureControllerV1.PostAsync);
     // TODO: add DTABAC adapter and controller here
 
-    app.Run();
+    try
+    {
+        app.Run();
+    }
+    catch (Exception e)
+    {
+        Log.Error(e.ToString());
+        throw;
+    }
 
     void MapGet(string path, Delegate @delegate) =>
         InvokeWithMessage(() => app.MapGet(path, @delegate), $"Mapping URL 'GET {path}'");

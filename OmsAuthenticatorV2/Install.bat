@@ -1,1 +1,1 @@
-sc create OmsAuthenticator binPath= %~dp0OmsAuthenticator.exe DisplayName= "OMS Authenticator"
+sc create OmsAuthenticatorV2 binPath= %~dp0OmsAuthenticatorV2.exe DisplayName= "OMS Authenticator V2"

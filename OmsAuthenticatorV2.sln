@@ -8,6 +8,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SignData", "SignData\SignData.csproj", "{44175EFA-FC98-4FF5-82D8-19D825782E12}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OmsAuthenticatorV2", "OmsAuthenticatorV2\OmsAuthenticatorV2.csproj", "{9D67A44F-B0EF-455E-903F-58A32CC3556A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{44175EFA-FC98-4FF5-82D8-19D825782E12} = {44175EFA-FC98-4FF5-82D8-19D825782E12}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CrptTokens", "CrptTokens\CrptTokens.csproj", "{0A25577A-A566-4BE5-BEC2-0B2A597BF77B}"
 EndProject
