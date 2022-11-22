@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using OmsAuthenticator.Configuration;
@@ -84,7 +85,7 @@ namespace OmsAuthenticator.ApiAdapters.TRUEAPI.V3
                 Uuid = authData.Uuid,
             };
 
-            var content = new StringContent(JsonSerializer.Serialize(tokenRequest), Encoding.Unicode, "application/json");
+            var content = new StringContent(JsonSerializer.Serialize(tokenRequest), Encoding.UTF8, "application/json");
 
             var result = await HttpResult.FromHttpResponseAsync<AuthTokenResponse>(
                 async () => await httpClient.PostAsync(url, content));
