@@ -25,7 +25,7 @@ namespace OmsAuthenticator.Tests.Api.V1
         {
             App = new OmsAuthenticatorApp($@"{{
   ""Authenticator"": {{
-    ""SignDataPath"": "".\\SignData.exe"",
+    ""SignDataPath"": "".\\SignData\\SignData.exe"",
     ""TokenProviders"": {{
       ""key1"": {{
         ""Adapter"": ""oms-v3"",

@@ -3,11 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32526.322
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OmsAuthenticatorV2", "OmsAuthenticatorV2\OmsAuthenticatorV2.csproj", "{1C59B09D-3F99-438C-816D-9022791E3EAA}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OmsAuthenticator.Tests", "OmsAuthenticator.Tests\OmsAuthenticator.Tests.csproj", "{31432044-3164-4A00-AC57-B84B0D954E60}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SignData", "SignData\SignData.csproj", "{44175EFA-FC98-4FF5-82D8-19D825782E12}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SignData", "SignData\SignData.csproj", "{44175EFA-FC98-4FF5-82D8-19D825782E12}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OmsAuthenticatorV2", "OmsAuthenticatorV2\OmsAuthenticatorV2.csproj", "{9D67A44F-B0EF-455E-903F-58A32CC3556A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CrptTokens", "CrptTokens\CrptTokens.csproj", "{0A25577A-A566-4BE5-BEC2-0B2A597BF77B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,10 +17,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{1C59B09D-3F99-438C-816D-9022791E3EAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1C59B09D-3F99-438C-816D-9022791E3EAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1C59B09D-3F99-438C-816D-9022791E3EAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1C59B09D-3F99-438C-816D-9022791E3EAA}.Release|Any CPU.Build.0 = Release|Any CPU
 		{31432044-3164-4A00-AC57-B84B0D954E60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{31432044-3164-4A00-AC57-B84B0D954E60}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{31432044-3164-4A00-AC57-B84B0D954E60}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -27,6 +25,14 @@ Global
 		{44175EFA-FC98-4FF5-82D8-19D825782E12}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{44175EFA-FC98-4FF5-82D8-19D825782E12}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{44175EFA-FC98-4FF5-82D8-19D825782E12}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9D67A44F-B0EF-455E-903F-58A32CC3556A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9D67A44F-B0EF-455E-903F-58A32CC3556A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9D67A44F-B0EF-455E-903F-58A32CC3556A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9D67A44F-B0EF-455E-903F-58A32CC3556A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A25577A-A566-4BE5-BEC2-0B2A597BF77B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A25577A-A566-4BE5-BEC2-0B2A597BF77B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A25577A-A566-4BE5-BEC2-0B2A597BF77B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A25577A-A566-4BE5-BEC2-0B2A597BF77B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

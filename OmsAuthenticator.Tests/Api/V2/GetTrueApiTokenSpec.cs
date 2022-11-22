@@ -19,7 +19,7 @@ namespace OmsAuthenticator.Tests.Api.V2
             // Using "integrationtests" for Certificate to short-cirquit the signer
             App = new OmsAuthenticatorApp($@"{{
   ""Authenticator"": {{
-    ""SignDataPath"": "".\\SignData.exe"",
+    ""SignDataPath"": "".\\SignData\\SignData.exe"",
     ""TokenProviders"": {{
       ""{ProviderKey}"": {{
         ""Adapter"": ""true-v3"",
@@ -250,7 +250,7 @@ namespace OmsAuthenticator.Tests.Api.V2
             // Using custom app because we have different certificate configuration for this test
             var app = new OmsAuthenticatorApp($@"{{
   ""Authenticator"": {{
-    ""SignDataPath"": "".\\SignData.exe"",
+    ""SignDataPath"": "".\\SignData\\SignData.exe"",
     ""TokenProviders"": {{
       ""key1"": {{
         ""Adapter"": ""true-v3"",

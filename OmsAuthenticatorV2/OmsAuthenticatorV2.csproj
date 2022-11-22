@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -8,18 +8,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="6.0.0" />
-    <PackageReference Include="Serilog" Version="2.11.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="6.0.1" />
+    <PackageReference Include="Serilog" Version="2.12.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="6.0.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
     <PackageReference Include="Serilog.Sinks.RollingFile" Version="3.3.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SignData\SignData.csproj">
-      <Private>True</Private>
-      <ReferenceOutputAssembly>False</ReferenceOutputAssembly>
-    </ProjectReference>
+      <!--Reference the SignData project binaries directly-->
+      <None Include="..\SignData\**\SignData.exe" Link="SignData\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+      <None Include="..\SignData\**\SignData.exe.config" Link="SignData\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+      <None Include="..\SignData\**\SignData.pdb" Link="SignData\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+      <None Include="..\SignData\**\System.Security.Cryptography.Pkcs.dll" Link="SignData\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

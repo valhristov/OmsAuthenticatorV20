@@ -21,7 +21,7 @@ namespace OmsAuthenticator.Tests.Api.V1
             // Using "integrationtests" for Certificate to short-cirquit the signer
             App = new OmsAuthenticatorApp($@"{{
   ""Authenticator"": {{
-    ""SignDataPath"": "".\\SignData.exe"",
+    ""SignDataPath"": "".\\SignData\\SignData.exe"",
     ""TokenProviders"": {{
       ""{ProviderKey}"": {{
         ""Adapter"": ""oms-v3"",
