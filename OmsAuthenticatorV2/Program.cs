@@ -41,8 +41,20 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment()) { }
 
-app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
+
+app.UseSerilogRequestLogging(options =>
+{
+    // Customize the message template
+    options.MessageTemplate = "{RemoteIpAddress} {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+    options.IncludeQueryInRequestPath = true;
+    // Attach additional properties to the request completion event
+    options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+    {
+        ////diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value); // uncomment if needed
+        diagnosticContext.Set("RemoteIpAddress", httpContext.Connection.RemoteIpAddress);
+    };
+}); 
 
 // Instantiate singletons
 var systemTime = app.Services.GetRequiredService<ISystemTime>();
