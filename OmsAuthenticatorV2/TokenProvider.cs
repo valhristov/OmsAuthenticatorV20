@@ -6,9 +6,9 @@ namespace OmsAuthenticator;
 public class TokenProvider
 {
     private readonly TokenCache _cache;
-    private readonly IOmsTokenAdapter _omsTokenAdapter;
+    private readonly ITokenAdapter _omsTokenAdapter;
 
-    public TokenProvider(TokenCache cache, IOmsTokenAdapter omsTokenAdapter)
+    public TokenProvider(TokenCache cache, ITokenAdapter omsTokenAdapter)
     {
         _cache = cache;
         _omsTokenAdapter = omsTokenAdapter;

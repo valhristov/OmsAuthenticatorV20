@@ -7,7 +7,7 @@ using OmsAuthenticator.Signing;
 
 namespace OmsAuthenticator.ApiAdapters.GISMT.V3
 {
-    public class GisAdapterV3 : IOmsTokenAdapter
+    public class GisAdapterV3 : ITokenAdapter
     {
         public const string AdapterName = "oms-v3";
 

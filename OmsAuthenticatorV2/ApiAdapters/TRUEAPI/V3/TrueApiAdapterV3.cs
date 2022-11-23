@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using OmsAuthenticator.Configuration;
@@ -8,7 +7,7 @@ using OmsAuthenticator.Signing;
 
 namespace OmsAuthenticator.ApiAdapters.TRUEAPI.V3
 {
-    public class TrueApiAdapterV3 : IOmsTokenAdapter
+    public class TrueApiAdapterV3 : ITokenAdapter
     {
         public const string AdapterName = "true-v3";
 

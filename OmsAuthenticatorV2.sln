@@ -12,7 +12,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OmsAuthenticatorV2", "OmsAu
 		{44175EFA-FC98-4FF5-82D8-19D825782E12} = {44175EFA-FC98-4FF5-82D8-19D825782E12}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrueClient", "TrueClient\TrueClient.csproj", "{037EB59D-1C1B-497C-BE28-BE56AB313373}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrueClient", "TrueClient\TrueClient.csproj", "{037EB59D-1C1B-497C-BE28-BE56AB313373}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

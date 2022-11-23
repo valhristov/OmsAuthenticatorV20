@@ -70,7 +70,7 @@ AuthenticatorConfig.Create(configuration)
         onSuccess: StartApplication, // Register API endpoints and start application
         onFailure: PrintMessages); // When any of the operations above fails, print errors here
 
-void StartApplication(IEnumerable<IOmsTokenAdapter> adapters)
+void StartApplication(IEnumerable<ITokenAdapter> adapters)
 {
     foreach (var adapter in adapters)
     {
@@ -130,24 +130,24 @@ void PrintMessages(ImmutableArray<string> errors)
     }
 }
 
-Result<IEnumerable<IOmsTokenAdapter>> GetAdapterInstances(AuthenticatorConfig config)
+Result<IEnumerable<ITokenAdapter>> GetAdapterInstances(AuthenticatorConfig config)
 {
     var signData = new ConsoleSignData(config.Signer.Path);
 
     return Result.Combine(config.TokenProviders.Select(CreateAdapterInstance));
 
-    Result<IOmsTokenAdapter> CreateAdapterInstance(TokenProviderConfig tokenProviderConfig) =>
+    Result<ITokenAdapter> CreateAdapterInstance(TokenProviderConfig tokenProviderConfig) =>
         tokenProviderConfig.AdapterName switch
         {
             GisAdapterV3.AdapterName => Result.Success(GetGisAdapterV3(tokenProviderConfig)),
             TrueApiAdapterV3.AdapterName => Result.Success(GetTrueAdapterV3(tokenProviderConfig)),
-            _ => Result.Failure<IOmsTokenAdapter>($"Adapter '{tokenProviderConfig.AdapterName}' is not supported."),
+            _ => Result.Failure<ITokenAdapter>($"Adapter '{tokenProviderConfig.AdapterName}' is not supported."),
         };
 
-    IOmsTokenAdapter GetGisAdapterV3(TokenProviderConfig tokenProviderConfig) =>
+    ITokenAdapter GetGisAdapterV3(TokenProviderConfig tokenProviderConfig) =>
         new GisAdapterV3(tokenProviderConfig, httpClientFactory, systemTime, signData);
 
-    IOmsTokenAdapter GetTrueAdapterV3(TokenProviderConfig tokenProviderConfig) =>
+    ITokenAdapter GetTrueAdapterV3(TokenProviderConfig tokenProviderConfig) =>
         new TrueApiAdapterV3(tokenProviderConfig, httpClientFactory, systemTime, signData);
 }
 

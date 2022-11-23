@@ -2,7 +2,7 @@
 
 namespace OmsAuthenticator.ApiAdapters
 {
-    public interface IOmsTokenAdapter
+    public interface ITokenAdapter
     {
         string PathSegment { get; }
 
