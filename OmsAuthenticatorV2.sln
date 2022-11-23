@@ -12,7 +12,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OmsAuthenticatorV2", "OmsAu
 		{44175EFA-FC98-4FF5-82D8-19D825782E12} = {44175EFA-FC98-4FF5-82D8-19D825782E12}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CrptTokens", "CrptTokens\CrptTokens.csproj", "{0A25577A-A566-4BE5-BEC2-0B2A597BF77B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrueClient", "TrueClient\TrueClient.csproj", "{037EB59D-1C1B-497C-BE28-BE56AB313373}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -32,10 +32,10 @@ Global
 		{9D67A44F-B0EF-455E-903F-58A32CC3556A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9D67A44F-B0EF-455E-903F-58A32CC3556A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9D67A44F-B0EF-455E-903F-58A32CC3556A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0A25577A-A566-4BE5-BEC2-0B2A597BF77B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0A25577A-A566-4BE5-BEC2-0B2A597BF77B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0A25577A-A566-4BE5-BEC2-0B2A597BF77B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0A25577A-A566-4BE5-BEC2-0B2A597BF77B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{037EB59D-1C1B-497C-BE28-BE56AB313373}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{037EB59D-1C1B-497C-BE28-BE56AB313373}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{037EB59D-1C1B-497C-BE28-BE56AB313373}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{037EB59D-1C1B-497C-BE28-BE56AB313373}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
