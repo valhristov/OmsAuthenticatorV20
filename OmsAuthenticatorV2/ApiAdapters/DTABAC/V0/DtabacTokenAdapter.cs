@@ -1,42 +1,62 @@
-﻿//using System.Text.Json.Serialization;
-//using OmsAuthenticator.Framework;
+﻿using System.Text.Json.Serialization;
+using OmsAuthenticator.Configuration;
+using OmsAuthenticator.Framework;
 
-//namespace OmsAuthenticator.ApiAdapters.DTABAC.V0
-//{
-//    public class DtabacTokenAdapter : IOmsTokenAdapter
-//    {
-//        public static readonly string HttpClientName = "dtabac";
+namespace OmsAuthenticator.ApiAdapters.DTABAC.V0
+{
+    public class DtabacTokenAdapter : ITokenAdapter
+    {
+        public static readonly string AdapterName = "dtabac";
+        private readonly TokenProviderConfig _config;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ISystemTime _systemTime;
 
-//        private readonly IHttpClientFactory _httpClientFactory;
-//        private readonly Func<string, Token> _tokenFactory;
+        public DtabacTokenAdapter(TokenProviderConfig config, IHttpClientFactory httpClientFactory, ISystemTime systemTime)
+        {
+            _config = config;
+            _httpClientFactory = httpClientFactory;
+            _systemTime = systemTime;
+        }
 
-//        public DtabacTokenAdapter(IHttpClientFactory httpClientFactory, Func<string, Token> tokenFactory)
-//        {
-//            _httpClientFactory = httpClientFactory;
-//            _tokenFactory = tokenFactory;
-//        }
+        public string PathSegment => _config.PathSegment;
 
-//        public async Task<Result<Token>> GetOmsTokenAsync(TokenKey tokenKey)
-//        {
-//            const string _url = "/gettoken";
+        public async Task<Result<Token>> GetTokenAsync(TokenKey tokenKey)
+        {
+            return tokenKey is TokenKey.Oms omsKey
+                ? await GetTokenAsync(omsKey)
+                : Result.Failure<Token>($"Adapter '{AdapterName}' does not support tokens of type '{tokenKey.GetType().Name}'. Are you using the wrong URL?");
 
-//            var httpClient = _httpClientFactory.CreateClient(HttpClientName);
+            async Task<Result<Token>> GetTokenAsync(TokenKey.Oms omsTokenKey)
+            {
+                const string _url = "/gettoken";
 
-//            var result = await HttpResult.FromHttpResponseAsync<AuthTokenResponse>(
-//                async () => await httpClient.GetAsync($"{_url}?{tokenKey.ConnectionId}"));
+                var httpClient = _httpClientFactory.CreateClient();
+                httpClient.BaseAddress = new Uri(_config.Url);
 
-//            return result.Convert(ToAuthToken);
+                var result = await HttpResult.FromHttpResponseAsync<AuthTokenResponse>(
+                    async () => await httpClient.GetAsync($"{_url}?{omsTokenKey.ConnectionId}"));
 
-//            Result<Token> ToAuthToken(AuthTokenResponse response) =>
-//                !string.IsNullOrEmpty(response.Token)
-//                    ? Result.Success(_tokenFactory(response.Token))
-//                    : Result.Failure<Token>($"{_url} returned empty token");
-//        }
+                return result.Convert(ToAuthToken);
 
-//        private class AuthTokenResponse
-//        {
-//            [JsonPropertyName("token")]
-//            public string? Token { get; set; }
-//        }
-//    }
-//}
+                Result<Token> ToAuthToken(AuthTokenResponse response) =>
+                    !string.IsNullOrEmpty(response.Token)
+                        ? Result.Success(new Token(response.Token!, omsTokenKey.RequestId!, GetExpiration()))
+                        : Result.Failure<Token>($"{_url}/gettoken returned empty token");
+            }
+        }
+
+        private DateTimeOffset GetExpiration() =>
+            _systemTime.UtcNow.Add(_config.Expiration);
+
+        public Task<Result<string>> SignAsync(string data)
+        {
+            throw new NotSupportedException();
+        }
+
+        private class AuthTokenResponse
+        {
+            [JsonPropertyName("token")]
+            public string? Token { get; set; }
+        }
+    }
+}
