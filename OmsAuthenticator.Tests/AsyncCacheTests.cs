@@ -2,8 +2,9 @@
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OmsAuthenticator.Framework;
+using OmsAuthenticator.Tests.Helpers;
 
-namespace OmsAuthenticator.Tests.Framework
+namespace OmsAuthenticator.Tests
 {
     [TestClass]
     public class TokenCacheTests
@@ -12,7 +13,7 @@ namespace OmsAuthenticator.Tests.Framework
         private TokenCache Cache { get; }
 
         private static readonly TimeSpan Expiration = TimeSpan.FromHours(1);
-        
+
         public TokenCacheTests()
         {
             SystemTimeMock = new SystemTimeMock();

@@ -1,6 +1,6 @@
 ﻿using OmsAuthenticator.Framework;
 
-namespace OmsAuthenticator.Tests
+namespace OmsAuthenticator.Tests.Helpers
 {
     public class SystemTimeMock : ISystemTime
     {

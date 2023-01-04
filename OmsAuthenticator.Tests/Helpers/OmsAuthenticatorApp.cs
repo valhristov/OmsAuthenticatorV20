@@ -7,32 +7,33 @@ using Moq;
 using OmsAuthenticator.Framework;
 using RichardSzalay.MockHttp;
 
-namespace OmsAuthenticator.Tests
+namespace OmsAuthenticator.Tests.Helpers
 {
     public class OmsAuthenticatorApp : WebApplicationFactory<Program>
     {
         private readonly Mock<IHttpClientFactory> _httpClientFactoryMock;
         private readonly SystemTimeMock _systemTimeMock;
+
         private readonly string _configurationJson;
 
-        public OmsTokenApiHelper GisApi { get; }
-        public TrueApiTokenApiHelper TrueApi { get; }
+        public HttpHelper HttpHelper { get; }
+        public GisApi GisApi { get; }
+        public TrueApi TrueApi { get; }
 
         public OmsAuthenticatorApp(string configurationJson)
         {
             _systemTimeMock = new SystemTimeMock();
 
-            var httpClientMock = new MockHttpMessageHandler();
-
-            GisApi = new OmsTokenApiHelper(httpClientMock);
-            TrueApi = new TrueApiTokenApiHelper(httpClientMock);
+            HttpHelper = new HttpHelper();
+            GisApi = new GisApi(HttpHelper);
+            TrueApi = new TrueApi(HttpHelper);
 
             _httpClientFactoryMock = new Mock<IHttpClientFactory>();
             _httpClientFactoryMock
                 .Setup(x => x.CreateClient(It.IsAny<string>()))
                 .Returns(() =>
                 {
-                    var client = httpClientMock.ToHttpClient();
+                    var client = new HttpClient(HttpHelper.MessageHandler);
                     client.BaseAddress = new Uri("http://test.com");
                     return client;
                 });

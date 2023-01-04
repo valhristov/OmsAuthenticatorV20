@@ -1,7 +1,7 @@
 ﻿using System.Collections.Immutable;
 using OmsAuthenticator.Framework;
 
-namespace OmsAuthenticator.Tests
+namespace OmsAuthenticator.Tests.Helpers
 {
     public static class ResultExtensions
     {
