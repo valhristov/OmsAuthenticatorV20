@@ -1,12 +1,6 @@
-﻿using OmsAuthenticator.Framework;
+﻿namespace OmsAuthenticator.ApiAdapters;
 
-namespace OmsAuthenticator.ApiAdapters
+public interface ITokenAdapter
 {
-    public interface ITokenAdapter
-    {
-        string PathSegment { get; }
-
-        Task<Result<Token>> GetTokenAsync(TokenKey tokenKey);
-        Task<Result<string>> SignAsync(string data);
-    }
+    string PathSegment { get; }
 }

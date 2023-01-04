@@ -21,6 +21,12 @@ namespace OmsAuthenticator.Tests.Clients
             Errors.Should().BeEquivalentTo(errorMessage);
         }
 
+        public void ShouldBeNotFound()
+        {
+            StatusCode.Should().Be(HttpStatusCode.NotFound);
+            Token.Should().BeNull();
+            RequestId.Should().BeNull();
+        }
 
         public void ShouldBeBadRequest(string errorMessage)
         {

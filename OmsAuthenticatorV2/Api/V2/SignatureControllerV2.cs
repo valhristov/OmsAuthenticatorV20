@@ -5,9 +5,9 @@ namespace OmsAuthenticator.Api.V2
 {
     public class SignatureControllerV2
     {
-        private readonly ITokenAdapter _adapter;
+        private readonly ISignatureAdapter _adapter;
 
-        public SignatureControllerV2(ITokenAdapter adapter)
+        public SignatureControllerV2(ISignatureAdapter adapter)
         {
             _adapter = adapter;
         }
@@ -16,11 +16,11 @@ namespace OmsAuthenticator.Api.V2
         {
             if (request == null)
             {
-                return Results.BadRequest(new TokenResponseV2(new[] { $"Invalid request." }));
+                return Results.BadRequest(new SignatureResponseV2(new[] { $"Invalid request." }));
             }
             if (request.PayloadBase64 == null)
             {
-                return Results.BadRequest(new TokenResponseV2(new[] { $"payloadBase64 body parameter is required." }));
+                return Results.BadRequest(new SignatureResponseV2(new[] { $"payloadBase64 body parameter is required." }));
             }
 
             var result = await _adapter.SignAsync(request.PayloadBase64);

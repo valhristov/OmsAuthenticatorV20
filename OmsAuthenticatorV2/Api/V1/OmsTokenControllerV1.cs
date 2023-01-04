@@ -1,14 +1,17 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using OmsAuthenticator.ApiAdapters;
 
 namespace OmsAuthenticator.Api.V1
 {
-    public class TokenControllerV1
+    public class OmsTokenControllerV1
     {
-        private readonly TokenProvider _tokenProvider;
+        private readonly TokenStore _tokenStore;
+        private readonly IOmsTokenAdapter _tokenAdapter;
 
-        public TokenControllerV1(TokenProvider tokenProvider)
+        public OmsTokenControllerV1(TokenStore tokenStore, IOmsTokenAdapter tokenAdapter)
         {
-            _tokenProvider = tokenProvider;
+            _tokenStore = tokenStore;
+            _tokenAdapter = tokenAdapter;
         }
 
         public async Task<IResult> GetAsync([FromQuery]string? omsId, [FromQuery]string? registrationKey)
@@ -22,7 +25,7 @@ namespace OmsAuthenticator.Api.V1
                 return Results.BadRequest(new TokenResponseV1(new[] { $"{nameof(registrationKey)} query string parameter is required." }));
             }
 
-            var tokenResult = await _tokenProvider.TryGetOmsTokenAsync(omsId, registrationKey);
+            var tokenResult = await _tokenStore.TryGetOmsTokenAsync(omsId, registrationKey);
 
             return tokenResult.Select(
                 token => Results.Ok(new TokenResponseV1(token.Value, token.RequestId, token.Expires)),
@@ -48,7 +51,9 @@ namespace OmsAuthenticator.Api.V1
                 return Results.BadRequest(new TokenResponseV1(new[] { $"omsId body parameter is required." }));
             }
 
-            var tokenResult = await _tokenProvider.GetOrAddOmsTokenAsync(new TokenKey.Oms(request.RegistrationKey, request.OmsId, request.OmsConnection, request.RequestId));
+            var tokenKey = new TokenKey.Oms(request.RegistrationKey, request.OmsId, request.OmsConnection, request.RequestId);
+
+            var tokenResult = await _tokenStore.GetOrAddOmsTokenAsync(tokenKey, _tokenAdapter.GetOmsTokenAsync);
 
             return tokenResult.Select(
                 token => Results.Ok(new TokenResponseV1(token.Value, token.RequestId, token.Expires)),

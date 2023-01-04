@@ -33,7 +33,7 @@ namespace OmsAuthenticator.Tests
     ""SignDataPath"": "".\\SignData\\SignData.exe"",
     ""TokenProviders"": {{
       ""{ProviderKey}"": {{
-        ""Adapter"": ""oms-v3"",
+        ""Adapter"": ""gis-v3"",
         ""Certificate"": ""integrationtests"",
         ""Url"": ""https://demo.crpt.ru"",
         ""Expiration"": ""{Expiration}""
@@ -306,7 +306,7 @@ namespace OmsAuthenticator.Tests
     ""SignDataPath"": "".\\SignData\\SignData.exe"",
     ""TokenProviders"": {{
       ""{ProviderKey}"": {{
-        ""Adapter"": ""oms-v3"",
+        ""Adapter"": ""gis-v3"",
         ""Certificate"": ""does-not-exist"",
         ""Url"": ""https://demo.crpt.ru"",
         ""Expiration"": ""{Expiration}""

@@ -7,9 +7,9 @@ using OmsAuthenticator.Signing;
 
 namespace OmsAuthenticator.ApiAdapters.GISMT.V3
 {
-    public class GisAdapterV3 : ITokenAdapter
+    public class GisAdapterV3 : ITokenAdapter, ITrueTokenAdapter, IOmsTokenAdapter, ISignatureAdapter
     {
-        public const string AdapterName = "oms-v3";
+        public const string AdapterName = "gis-v3";
 
         private readonly TokenProviderConfig _config;
         private readonly IHttpClientFactory _httpClientFactory;
@@ -26,25 +26,32 @@ namespace OmsAuthenticator.ApiAdapters.GISMT.V3
 
         public string PathSegment => _config.PathSegment;
 
-        public async Task<Result<Token>> GetTokenAsync(TokenKey tokenKey)
+        public async Task<Result<Token>> GetOmsTokenAsync(TokenKey.Oms key)
         {
-            if (tokenKey is TokenKey.Oms omsKey)
-            {
-                var httpClient = _httpClientFactory.CreateClient();
-                httpClient.BaseAddress = new Uri(_config.Url);
+            var httpClient = _httpClientFactory.CreateClient();
+            httpClient.BaseAddress = new Uri(_config.Url);
 
-                var authDataResult = await GetAuthData(httpClient);
+            var authDataResult = await GetAuthData(httpClient);
 
-                var signedDataResult = await authDataResult.ConvertAsync(async authData => await SignData(authData));
+            var signedDataResult = await authDataResult.ConvertAsync(async authData => await SignData(authData));
 
-                var tokenResult = await signedDataResult.ConvertAsync(async authData => await GetOmsTokenAsync(omsKey, authData, httpClient));
+            var tokenResult = await signedDataResult.ConvertAsync(async authData => await GetOmsTokenAsync(key, authData, httpClient));
 
-                return tokenResult;
-            }
-            else
-            {
-                return Result.Failure<Token>($"Adapter '{AdapterName}' does not support tokens of type '{tokenKey.GetType().Name}'. Are you using the wrong URL?");
-            }
+            return tokenResult;
+        }
+
+        public async Task<Result<Token>> GetTrueTokenAsync(TokenKey.TrueApi key)
+        {
+            var httpClient = _httpClientFactory.CreateClient();
+            httpClient.BaseAddress = new Uri(_config.Url);
+
+            var authDataResult = await GetAuthData(httpClient);
+
+            var signedDataResult = await authDataResult.ConvertAsync(async authData => await SignData(authData));
+
+            var tokenResult = await signedDataResult.ConvertAsync(async authData => await GetTrueTokenAsync(key, authData, httpClient));
+
+            return tokenResult;
         }
 
         public async Task<Result<string>> SignAsync(string data) =>
@@ -77,6 +84,32 @@ namespace OmsAuthenticator.ApiAdapters.GISMT.V3
         private async Task<Result<Token>> GetOmsTokenAsync(TokenKey.Oms tokenKey, AuthData authData, HttpClient httpClient)
         {
             var url = $"/api/v3/auth/cert/{tokenKey.ConnectionId}";
+
+            var tokenRequest = new GetTokenRequest
+            {
+                Data = authData.Data,
+                Uuid = authData.Uuid,
+            };
+
+            var content = new StringContent(JsonSerializer.Serialize(tokenRequest), Encoding.UTF8, "application/json");
+
+            var result = await HttpResult.FromHttpResponseAsync<AuthTokenResponse>(
+                async () => await httpClient.PostAsync(url, content));
+
+            return result.Convert(ToToken);
+
+            Result<Token> ToToken(AuthTokenResponse response) =>
+                response.Token != null && response.ErrorCode == null
+                    ? Result.Success(new Token(response.Token, tokenKey.RequestId!, GetExpiration()))
+                    : Result.Failure<Token>($"GIS-MT returned status OK, but no token. " +
+                                            $"Error Code: '{response.ErrorCode}', " +
+                                            $"Error Message: '{response.ErrorMessage}', " +
+                                            $"Error Description: '{response.ErrorDescription}'");
+        }
+
+        private async Task<Result<Token>> GetTrueTokenAsync(TokenKey.TrueApi tokenKey, AuthData authData, HttpClient httpClient)
+        {
+            var url = $"/api/v3/true-api/auth/simpleSignIn";
 
             var tokenRequest = new GetTokenRequest
             {

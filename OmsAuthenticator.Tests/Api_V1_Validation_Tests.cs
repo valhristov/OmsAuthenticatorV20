@@ -7,7 +7,8 @@ namespace OmsAuthenticator.Tests
 {
     public class Api_V1
     {
-        private const string ProviderKey = "provider";
+        private const string GisProviderKey = "gis-provider";
+        private const string DtabacProviderKey = "dtabac-provider";
         private static readonly TimeSpan Expiration = TimeSpan.FromHours(10);
 
         private readonly HttpClient _httpClient;
@@ -23,9 +24,14 @@ namespace OmsAuthenticator.Tests
   ""Authenticator"": {{
     ""SignDataPath"": "".\\SignData\\SignData.exe"",
     ""TokenProviders"": {{
-      ""{ProviderKey}"": {{
-        ""Adapter"": ""oms-v3"",
+      ""{GisProviderKey}"": {{
+        ""Adapter"": ""gis-v3"",
         ""Certificate"": ""integrationtests"",
+        ""Url"": ""https://demo.crpt.ru"",
+        ""Expiration"": ""{Expiration}""
+      }},
+      ""{DtabacProviderKey}"": {{
+        ""Adapter"": ""dtabac-v0"",
         ""Url"": ""https://demo.crpt.ru"",
         ""Expiration"": ""{Expiration}""
       }}
@@ -36,11 +42,11 @@ namespace OmsAuthenticator.Tests
         }
 
         [Theory]
-        [InlineData("/api/v1/" + ProviderKey + "/oms/token", "omsId")]
-        [InlineData("/api/v1/" + ProviderKey + "/oms/token?omsid=best", "registrationKey")]
-        [InlineData("/api/v1/" + ProviderKey + "/oms/token?connectionid=best", "omsId")]
-        [InlineData("/api/v1/" + ProviderKey + "/oms/token?omsId=best&requestId=1", "registrationKey")]
-        [InlineData("/api/v1/" + ProviderKey + "/oms/token?connectionid=best&requestid=1", "omsId")]
+        [InlineData("/api/v1/" + GisProviderKey + "/oms/token", "omsId")]
+        [InlineData("/api/v1/" + GisProviderKey + "/oms/token?omsid=best", "registrationKey")]
+        [InlineData("/api/v1/" + GisProviderKey + "/oms/token?connectionid=best", "omsId")]
+        [InlineData("/api/v1/" + GisProviderKey + "/oms/token?omsId=best&requestId=1", "registrationKey")]
+        [InlineData("/api/v1/" + GisProviderKey + "/oms/token?connectionid=best&requestid=1", "omsId")]
         [InlineData("/oms/token", "omsId")]
         [InlineData("/oms/token?test=best", "omsId")]
         [InlineData("/oms/token?omsId=xxx", "registrationKey")]
@@ -70,10 +76,10 @@ namespace OmsAuthenticator.Tests
 
             // Act
             var response = await OmsAuthenticatorClientV1.GetOmsAuthenticatorResponse(
-                await _httpClient.GetAsync($"/api/v2/{ProviderKey}/true/token?omsid={NewGuid()}&connectionid={NewGuid()}{requestIdParameter}"));
+                await _httpClient.GetAsync($"/api/v2/{DtabacProviderKey}/true/token?omsid={NewGuid()}&connectionid={NewGuid()}{requestIdParameter}"));
 
             // Assert
-            response.ShouldBeUnprocessableEntity("Adapter 'oms-v3' does not support tokens of type 'TrueApi'. Are you using the wrong URL?");
+            response.ShouldBeNotFound();
         }
     }
 }

@@ -5,9 +5,9 @@ namespace OmsAuthenticator.Api.V1
 {
     public class SignatureControllerV1
     {
-        private readonly ITokenAdapter _adapter;
+        private readonly ISignatureAdapter _adapter;
 
-        public SignatureControllerV1(ITokenAdapter adapter)
+        public SignatureControllerV1(ISignatureAdapter adapter)
         {
             _adapter = adapter;
         }

@@ -41,8 +41,11 @@ namespace OmsAuthenticator.Tests.Clients
 
         public static async Task<TokenResponse> GetOmsAuthenticatorResponse(HttpResponseMessage response)
         {
-            var tokenResponse = JsonSerializer.Deserialize<TokenResponseV2>(await response.Content.ReadAsStringAsync())!;
-            return new TokenResponse(response.StatusCode, tokenResponse.Token, tokenResponse.RequestId, tokenResponse.Errors);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var tokenResponse = string.IsNullOrEmpty(responseContent)
+                ? default
+                : JsonSerializer.Deserialize<TokenResponseV2>(responseContent)!;
+            return new TokenResponse(response.StatusCode, tokenResponse?.Token, tokenResponse?.RequestId, tokenResponse?.Errors);
         }
 
         public async Task<SignatureResponse> Sign(string value)
@@ -54,8 +57,11 @@ namespace OmsAuthenticator.Tests.Clients
 
         private async Task<SignatureResponse> GetSignatureResponse(HttpResponseMessage response)
         {
-            var signatureResponse = JsonSerializer.Deserialize<SignatureResponseV2>(await response.Content.ReadAsStringAsync())!;
-            return new SignatureResponse(response.StatusCode, signatureResponse.Signature, signatureResponse.Errors);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var signatureResponse = string.IsNullOrEmpty(responseContent)
+                ? default
+                : JsonSerializer.Deserialize<SignatureResponseV2>(responseContent);
+            return new SignatureResponse(response.StatusCode, signatureResponse?.Signature, signatureResponse?.Errors);
         }
     }
 }

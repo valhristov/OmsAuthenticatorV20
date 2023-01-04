@@ -31,8 +31,10 @@ namespace OmsAuthenticator.Tests.Clients
         public static async Task<TokenResponse> GetOmsAuthenticatorResponse(HttpResponseMessage response)
         {
             var responseContent = await response.Content.ReadAsStringAsync();
-            var tokenResponse = JsonSerializer.Deserialize<TokenResponseV1>(responseContent)!;
-            return new TokenResponse(response.StatusCode, tokenResponse.Token, tokenResponse.RequestId, tokenResponse.Errors);
+            var tokenResponse = string.IsNullOrEmpty(responseContent)
+                ? default
+                : JsonSerializer.Deserialize<TokenResponseV1>(responseContent);
+            return new TokenResponse(response.StatusCode, tokenResponse?.Token, tokenResponse?.RequestId, tokenResponse?.Errors);
         }
     }
 }

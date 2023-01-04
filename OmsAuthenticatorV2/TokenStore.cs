@@ -3,22 +3,20 @@ using OmsAuthenticator.Framework;
 
 namespace OmsAuthenticator;
 
-public class TokenProvider
+public class TokenStore
 {
     private readonly TokenCache _cache;
-    private readonly ITokenAdapter _omsTokenAdapter;
 
-    public TokenProvider(TokenCache cache, ITokenAdapter omsTokenAdapter)
+    public TokenStore(TokenCache cache)
     {
         _cache = cache;
-        _omsTokenAdapter = omsTokenAdapter;
     }
 
-    public async Task<Result<Token>> GetOrAddOmsTokenAsync(TokenKey.Oms tokenKey)
+    public async Task<Result<Token>> GetOrAddOmsTokenAsync(TokenKey.Oms tokenKey, Func<TokenKey.Oms, Task<Result<Token>>> getTokenAsync)
     {
         return await GetToken(tokenKey,
             FindCompatibleToken, // when requestId is null
-            _omsTokenAdapter.GetTokenAsync);
+            getTokenAsync);
 
         bool FindCompatibleToken(TokenKey key) =>
             key is TokenKey.Oms omsKey && omsKey.OmsId == tokenKey.OmsId && omsKey.ConnectionId == tokenKey.ConnectionId;
@@ -36,11 +34,11 @@ public class TokenProvider
             key is TokenKey.Oms omsKey && omsKey.OmsId == omsId && omsKey.ApplicationId == applicationId;
     }
 
-    public async Task<Result<Token>> GetTrueTokenAsync(TokenKey.TrueApi tokenKey)
+    public async Task<Result<Token>> GetTrueTokenAsync(TokenKey.TrueApi tokenKey, Func<TokenKey.TrueApi, Task<Result<Token>>> getTokenAsync)
     {
         return await GetToken(tokenKey,
             FindCompatibleToken, // when requestId is null
-            _omsTokenAdapter.GetTokenAsync);
+            getTokenAsync);
 
         bool FindCompatibleToken(TokenKey key) =>
             key is TokenKey.TrueApi;

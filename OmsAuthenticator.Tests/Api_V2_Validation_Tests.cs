@@ -8,7 +8,7 @@ namespace OmsAuthenticator.Tests
     public class Api_V2
     {
         private const string OmsProviderKey = "oms-provider";
-        private const string TrueProviderKey = "true-provider";
+        private const string DtabacProviderKey = "dtabac-provider";
         private static readonly TimeSpan Expiration = TimeSpan.FromHours(10);
 
         private readonly HttpClient _httpClient;
@@ -25,13 +25,13 @@ namespace OmsAuthenticator.Tests
     ""SignDataPath"": "".\\SignData\\SignData.exe"",
     ""TokenProviders"": {{
       ""{OmsProviderKey}"": {{
-        ""Adapter"": ""oms-v3"",
+        ""Adapter"": ""gis-v3"",
         ""Certificate"": ""integrationtests"",
         ""Url"": ""https://demo.crpt.ru"",
         ""Expiration"": ""{Expiration}""
       }},
-      ""{TrueProviderKey}"": {{
-        ""Adapter"": ""true-v3"",
+      ""{DtabacProviderKey}"": {{
+        ""Adapter"": ""dtabac-v0"",
         ""Certificate"": ""integrationtests"",
         ""Url"": ""https://demo.crpt.ru"",
         ""Expiration"": ""{Expiration}""
@@ -70,18 +70,17 @@ namespace OmsAuthenticator.Tests
         [InlineData("")] // we get token without request id
         public async Task Unsupported_Token_Type(string requestIdParameter)
         {
-            // Note the path contains "true" instead of "oms". This means the URL is for
-            // true api tokens. Valid OMS request parameters provided to the TRUE API
-            // should generate response with status code 422.
+            // Note the path contains "true" instead of "oms"; The dtabac-v0 adapter does not support
+            // true api tokens and is not registered in the route map.
 
             // Arrange
 
             // Act
             var response = await OmsAuthenticatorClientV2.GetOmsAuthenticatorResponse(
-                await _httpClient.GetAsync($"/api/v2/{OmsProviderKey}/true/token?omsid={NewGuid()}&connectionid={NewGuid()}{requestIdParameter}"));
+                await _httpClient.GetAsync($"/api/v2/{DtabacProviderKey}/true/token?omsid={NewGuid()}&connectionid={NewGuid()}{requestIdParameter}"));
 
             // Assert
-            response.ShouldBeUnprocessableEntity("Adapter 'oms-v3' does not support tokens of type 'TrueApi'. Are you using the wrong URL?");
+            response.ShouldBeNotFound();
         }
     }
 }

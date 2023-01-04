@@ -1,6 +1,6 @@
 ﻿using System.Collections.Immutable;
+using OmsAuthenticator.ApiAdapters.DTABAC.V0;
 using OmsAuthenticator.ApiAdapters.GISMT.V3;
-using OmsAuthenticator.ApiAdapters.TRUEAPI.V3;
 using OmsAuthenticator.Framework;
 
 namespace OmsAuthenticator.Configuration;
@@ -39,7 +39,7 @@ public record TokenProviderConfig(string PathSegment, string AdapterName, string
         adapter switch
         {
             GisAdapterV3.AdapterName or
-            TrueApiAdapterV3.AdapterName => Result.Success(adapter),
+            DtabacAdapterV0.AdapterName => Result.Success(adapter),
             _ => Result.Failure<string>($"Configured Adapter '{adapter}' is not supported."),
         };
 }
