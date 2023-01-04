@@ -4,7 +4,7 @@ using Xunit;
 
 namespace OmsAuthenticator.Tests
 {
-    public class SignData_V1_Tests
+    public class Sign_Tests
     {
         // The key of the token provider configuration to use
         private const string ProviderKey = "provider";
@@ -19,7 +19,7 @@ namespace OmsAuthenticator.Tests
             new [] { new Func<HttpClient, ISignatureClient>(httpClient => new OmsAuthenticatorClientLegacy(httpClient)) },
         };
 
-        public SignData_V1_Tests()
+        public Sign_Tests()
         {
             // Using "integrationtests" for Certificate to short-cirquit the signer
             _app = new OmsAuthenticatorApp($@"{{
@@ -68,7 +68,7 @@ namespace OmsAuthenticator.Tests
 
         [Theory]
         [MemberData(nameof(AuthenticatorClients))]
-        public async Task SignData_Success(Func<HttpClient, ISignatureClient> getClient)
+        public async Task Sign_Success(Func<HttpClient, ISignatureClient> getClient)
         {
             // Arrange
             var client = getClient(_httpClient);
